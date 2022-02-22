@@ -464,7 +464,7 @@ class Ui_MainWindow(object):
     def createMessage(self, name, msg_type, vars, var_types):
         new_msg = message(name, msg_type, vars, var_types)
         self.message_list.append(new_msg)
-        print("w")
+        
         combo_list = self.findChildren(QtWidgets.QComboBox, QtCore.QRegularExpression("^messageCombo.*"))
         for combo in combo_list:
             print(combo.objectName())

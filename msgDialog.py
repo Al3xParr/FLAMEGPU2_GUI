@@ -8,7 +8,7 @@
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QDialog
-from structures import message
+from structures import message, isValidName
 
 
 
@@ -16,7 +16,7 @@ class Ui_messageDialog(object):
 
     def __init__(self):
         self.vars = 0
-        self.msgs = 1
+        self.msgs = 0
 
 
     def setupUi(self, messageDialog):
@@ -175,6 +175,11 @@ class Ui_messageDialog(object):
         self.varVertLayout.insertLayout(children-1, self.newVarBox)
 
         self.vars += 1
+    
+    def removeVar(self, index):
+        components = self.varScrollContainer.findChildren((QtWidgets.QGridLayout, QtWidgets.QLineEdit, QtWidgets.QPushButton, QtWidgets.QComboBox), QtCore.QRegularExpression(f"\w*{index}\w*"))
+        for w in components:
+            w.setParent(None)
 
 
     def addMsg(self):
@@ -187,15 +192,22 @@ class Ui_messageDialog(object):
         for i in range(self.vars):
             a = contents_names.index(f"var{i}Type")
             msgVarsType.append(contents[a].currentText())
+            contents[a].setCurrentIndex(0)
 
             a = contents_names.index(f"var{i}Name")
-            if not structures.isValidName(contents[a].text()):
+            if not isValidName(contents[a].text()):
                 self.errorMsg("Invalid variable name")
                 return
             msgVars.append(contents[a].text())
+            contents[a].setText("")
+            if i > 0:
+                self.removeVar(i)
+
 
         
         new_message = self.parent().createMessage(self.newMsgName.text(), self.newMsgType.currentText(), msgVars, msgVarsType)
+        self.newMsgType.setCurrentIndex(0)
+        self.newMsgName.setText("")
         self.displayMessage(new_message)
 
     def errorMsg(self, string):
@@ -209,6 +221,20 @@ class Ui_messageDialog(object):
             self.setParent(None)
             return True
         return False
+    
+    def delMsg(self, index):
+        confirmBox = QtWidgets.QMessageBox()
+        msgName = self.findChild(QtWidgets.QLabel, f"msg{index}Name").text()
+        confirmBox.setText(f"Delete request for {msgName}")
+        confirmBox.setInformativeText(f"Are you sure you want to delete message {msgName}?")
+        confirmBox.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Cancel|QtWidgets.QMessageBox.StandardButton.Yes)
+        result = confirmBox.exec()
+        if result == QtWidgets.QMessageBox.StandardButton.Yes:
+            widgets = self.findChildren((QtWidgets.QGridLayout, QtWidgets.QLabel, QtWidgets.QPushButton), QtCore.QRegularExpression(f"\w*{index}\w*"))
+            for w in widgets:
+                w.setParent(None)
+
+
         
     def displayMessage(self, message):
         
@@ -287,7 +313,7 @@ class Ui_messageDialog(object):
         self.newMsgDel.setText("Delete")
         self.newMsgBox.addWidget(self.newMsgDel, 2+len(message.vars), 0, 1, 2)
 
-        #self.newMsgDel.clicked.connect(lambda: self.delMsg())
+        self.newMsgDel.clicked.connect(lambda: self.delMsg(self.msgs))
 
         children = self.msgVertLayout.count()
         self.msgVertLayout.insertLayout(children-1, self.newMsgBox)
