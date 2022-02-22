@@ -308,7 +308,7 @@ class Ui_MainWindow(object):
         self.newLayerBox.addWidget(self.newLbl)
         self.newLayerBox.addWidget(self.layerDel)
 
-        self.layerDel.clicked.connect(self.removeItem(self.layerDel))
+        self.layerDel.clicked.connect(lambda: self.removeItem(self.layerDel))
 
         children = self.flowVertLayout.count()
         self.flowVertLayout.insertLayout(children-1, self.newLayerBox)
@@ -422,29 +422,28 @@ class Ui_MainWindow(object):
         return None
 
     def removeItem(self, widget):
-        def execute():
-            layout = widget.parent().layout()
-            items = layout.children()
 
-            w_num = "".join([n for n in widget.objectName() if n.isdigit()])
+        layout = widget.parent().layout()
+        items = layout.children()
 
-            for item in items:
-                i_num = "".join([n for n in item.objectName() if n.isdigit()])  
-                if i_num == w_num:                  
-                    layout.removeItem(item)
-                    break
-            
-            for child in widget.parent().children():
-                c_num = "".join([n for n in child.objectName() if n.isdigit()])
-                if c_num == w_num and (child.objectName()[:5] == "layer" or child.objectName()[:3] == "env"):
-                    child.setParent(None)
-            
-            if item.objectName()[:5] == "layer":
-                self.layers -= 1
-            elif item.objectName()[:3] == "env":
-                self.envProps -= 1
+        w_num = "".join([n for n in widget.objectName() if n.isdigit()])
 
-        return execute
+        for item in items:
+            i_num = "".join([n for n in item.objectName() if n.isdigit()])  
+            if i_num == w_num:                  
+                layout.removeItem(item)
+                break
+        
+        for child in widget.parent().children():
+            c_num = "".join([n for n in child.objectName() if n.isdigit()])
+            if c_num == w_num and (child.objectName()[:5] == "layer" or child.objectName()[:3] == "env"):
+                child.setParent(None)
+        
+        if item.objectName()[:5] == "layer":
+            self.layers -= 1
+        elif item.objectName()[:3] == "env":
+            self.envProps -= 1
+
 
 
     def moveFlowFunc(self, label, pos):
