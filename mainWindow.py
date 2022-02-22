@@ -467,9 +467,22 @@ class Ui_MainWindow(object):
         
         combo_list = self.findChildren(QtWidgets.QComboBox, QtCore.QRegularExpression("^messageCombo.*"))
         for combo in combo_list:
-            print(combo.objectName())
             combo.addItem(name)
         return new_msg
+    
+    def messageDeleted(self, name):
+        for m in self.message_list:
+            if m.name == name:
+                self.message_list.remove(m)
+                break
+        
+        combo_list = self.findChildren(QtWidgets.QComboBox, QtCore.QRegularExpression("^messageCombo.*"))
+        for combo in combo_list:
+            for i in range(combo.count()):
+                if combo.itemText(i) == name:
+                    combo.removeItem(i)
+                    break    
+
 
     def funcRemoved(self, index):
         for key, val in self.lines.items():

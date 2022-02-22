@@ -230,6 +230,7 @@ class Ui_messageDialog(object):
         confirmBox.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Cancel|QtWidgets.QMessageBox.StandardButton.Yes)
         result = confirmBox.exec()
         if result == QtWidgets.QMessageBox.StandardButton.Yes:
+            self.parent().messageDeleted(msgName)
             widgets = self.findChildren((QtWidgets.QGridLayout, QtWidgets.QLabel, QtWidgets.QPushButton), QtCore.QRegularExpression(f"\w*{index}\w*"))
             for w in widgets:
                 w.setParent(None)
