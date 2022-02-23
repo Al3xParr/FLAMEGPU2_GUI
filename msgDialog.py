@@ -222,7 +222,9 @@ class Ui_messageDialog(object):
             return True
         return False
     
-    def delMsg(self, index):
+    def delMsg(self):
+        index = "".join([n for n in self.sender.objectName() if n.isdigit()])
+
         confirmBox = QtWidgets.QMessageBox()
         msgName = self.findChild(QtWidgets.QLabel, f"msg{index}Name").text()
         confirmBox.setText(f"Delete request for {msgName}")
@@ -314,7 +316,7 @@ class Ui_messageDialog(object):
         self.newMsgDel.setText("Delete")
         self.newMsgBox.addWidget(self.newMsgDel, 2+len(message.vars), 0, 1, 2)
 
-        self.newMsgDel.clicked.connect(lambda: self.delMsg(self.msgs))
+        self.newMsgDel.clicked.connect(self.delMsg)
 
         children = self.msgVertLayout.count()
         self.msgVertLayout.insertLayout(children-1, self.newMsgBox)

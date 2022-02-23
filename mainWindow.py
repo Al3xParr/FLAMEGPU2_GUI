@@ -20,7 +20,7 @@ class Ui_MainWindow(object):
 
     def __init__(self):
         super().__init__()
-        self.layers = 1
+        self.layers = 0
         self.functions = 0
         self.envProps = 1
         self.agentBlockNum = 0
@@ -118,6 +118,7 @@ class Ui_MainWindow(object):
         self.flowScrollContents.setObjectName("flowScrollContents")
         self.flowVertLayout = QtWidgets.QVBoxLayout(self.flowScrollContents)
         self.flowVertLayout.setObjectName("flowVertLayout")
+        """
         self.layer1Box = QtWidgets.QHBoxLayout()
         self.layer1Box.setObjectName("layer1Box")
         self.layer1Lbl = QtWidgets.QLabel(self.flowScrollContents)
@@ -141,6 +142,7 @@ class Ui_MainWindow(object):
         self.layer1Del.setObjectName("layer1Del")
         self.layer1Box.addWidget(self.layer1Del)
         self.flowVertLayout.addLayout(self.layer1Box)
+        """
         spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.flowVertLayout.addItem(spacerItem1)
         self.flowScroll.setWidget(self.flowScrollContents)
@@ -203,6 +205,8 @@ class Ui_MainWindow(object):
         app_icon.addFile('flamegpu.png', QtCore.QSize(216,256))
         self.setWindowIcon(app_icon)
 
+        self.addLayer()
+
         tray = QtWidgets.QSystemTrayIcon()
         tray.setIcon(app_icon)
         tray.setVisible(True)
@@ -214,7 +218,7 @@ class Ui_MainWindow(object):
         self.actionAddAgent.triggered.connect(self.openAgentAdd)
         self.actionAddFunc.triggered.connect(self.createFunctionBlock)
         self.actionConfig.triggered.connect(self.openConfig)
-        self.layer1Del.clicked.connect(self.removeItem(self.layer1Del))
+        #self.layer1Del.clicked.connect(lambda: self.deleteLayer(self.layer1Del))
 
 
         self.retranslateUi(MainWindow)
@@ -225,8 +229,8 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "FLAMEGPU2"))
         self.envPropTitle.setText(_translate("MainWindow", "Environment Properties"))
         self.addEnvPropBtn.setText(_translate("MainWindow", "Add Property"))
-        self.layer1Lbl.setText(_translate("MainWindow", "Layer 1:"))
-        self.layer1Del.setText(_translate("MainWindow", "X"))
+        #self.layer1Lbl.setText(_translate("MainWindow", "Layer 1:"))
+        #self.layer1Del.setText(_translate("MainWindow", "X"))
         self.flowTitle.setText(_translate("MainWindow", "Control Flow"))
         self.addLayerBtn.setText(_translate("MainWindow", "Add Layer"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
@@ -236,11 +240,28 @@ class Ui_MainWindow(object):
         self.action_Save.setText(_translate("MainWindow", "Save"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionView_Messages.setText(_translate("MainWindow", "View"))
-        #self.actionAdd.setText(_translate("MainWindow", "Add"))
         self.actionConfig.setText(_translate("MainWindow", "Config"))
         self.actionLaunch.setText(_translate("MainWindow", "Launch"))
         self.actionAddAgent.setText(_translate("MainWindow", "Add Agent"))
         self.actionAddFunc.setText(_translate("MainWindow", "Add Function"))
+
+    def deleteLayer(self):
+        widget = self.sender()
+        index = "".join([n for n in widget.objectName() if n.isdigit()])
+
+        self.removeItem(widget)
+        index = int(widget.objectName()[5:-3])
+        for i in range(index+1, self.layers+2):
+            box = self.flowScrollContents.findChild(QtWidgets.QHBoxLayout, f"layer{i}box")
+            box.setObjectName(f"layer{i-1}box")
+            lbl = self.flowScrollContents.findChild(QtWidgets.QLabel, f"layer{i}lbl")
+            lbl.setObjectName(f"layer{i-1}lbl")
+            lbl.setText(f"Layer {i-1}:")
+            delBtn = self.flowScrollContents.findChild(QtWidgets.QPushButton, f"layer{i}Del")
+            delBtn.setObjectName(f"layer{i-1}Del")
+
+
+        
 
 
     def createFunctionBlock(self):
@@ -299,7 +320,7 @@ class Ui_MainWindow(object):
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.layer1Del.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(self.layerDel.sizePolicy().hasHeightForWidth())
         self.layerDel.setSizePolicy(sizePolicy)
         self.layerDel.setMinimumSize(QtCore.QSize(20, 20))
         self.layerDel.setCheckable(False)
@@ -308,7 +329,7 @@ class Ui_MainWindow(object):
         self.newLayerBox.addWidget(self.newLbl)
         self.newLayerBox.addWidget(self.layerDel)
 
-        self.layerDel.clicked.connect(lambda: self.removeItem(self.layerDel))
+        self.layerDel.clicked.connect(self.deleteLayer)
 
         children = self.flowVertLayout.count()
         self.flowVertLayout.insertLayout(children-1, self.newLayerBox)
@@ -381,7 +402,7 @@ class Ui_MainWindow(object):
         self.newEnvDel.setObjectName(f"envDel{self.envProps}")
         self.newEnvPropBox.addWidget(self.newEnvDel)
 
-        self.newEnvDel.clicked.connect(self.removeItem(self.newEnvDel))
+        self.newEnvDel.clicked.connect(self.removeItem)
 
         children = self.envVertLayout.count()
         self.envVertLayout.insertLayout(children-1, self.newEnvPropBox)
@@ -422,6 +443,9 @@ class Ui_MainWindow(object):
         return None
 
     def removeItem(self, widget):
+        
+        if not isinstance(widget, QtCore.QObject):
+            widget = self.sender()
 
         layout = widget.parent().layout()
         items = layout.children()

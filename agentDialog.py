@@ -164,34 +164,34 @@ class Ui_agentDialog(object):
         self.newVarDel.setText("X")
         self.newVarBox.addWidget(self.newVarDel)
 
-        self.newVarDel.clicked.connect(self.removeItem(self.newVarDel))
+        self.newVarDel.clicked.connect(self.removeItem)
 
         children = self.agentVertLayout.count()
         self.agentVertLayout.insertLayout(children-1, self.newVarBox)
 
         self.vars += 1
 
-    def removeItem(self, widget):
-        def execute():
-            layout = widget.parent().layout()
-            items = layout.children()
+    def removeItem(self):
+        widget = self.sender()
 
-            w_num = "".join([n for n in widget.objectName() if n.isdigit()])
+        layout = widget.parent().layout()
+        items = layout.children()
 
-            for item in items:
-                i_num = "".join([n for n in item.objectName() if n.isdigit()])  
-                if i_num == w_num:                  
-                    layout.removeItem(item)
-                    break
-            
-            for child in widget.parent().children():
-                c_num = "".join([n for n in child.objectName() if n.isdigit()])  
-                if c_num == w_num:
-                    child.setParent(None)
-            
-            self.vars -= 1
+        w_num = "".join([n for n in widget.objectName() if n.isdigit()])
 
-        return execute
+        for item in items:
+            i_num = "".join([n for n in item.objectName() if n.isdigit()])  
+            if i_num == w_num:                  
+                layout.removeItem(item)
+                break
+        
+        for child in widget.parent().children():
+            c_num = "".join([n for n in child.objectName() if n.isdigit()])  
+            if c_num == w_num:
+                child.setParent(None)
+        
+        self.vars -= 1
+
 
 
 class AgentDialog(QDialog, Ui_agentDialog):
