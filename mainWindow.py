@@ -14,7 +14,8 @@ from agentDialog import AgentDialog
 from configDialog import ConfigDialog
 from Blocks import AgentBlock, FuncBlock
 from structures import message
-
+import json
+import os
 
 class Ui_MainWindow(object):
 
@@ -22,7 +23,7 @@ class Ui_MainWindow(object):
         super().__init__()
         self.layers = 0
         self.functions = 0
-        self.envProps = 1
+        self.envProps = 0
         self.agentBlockNum = 0
         self.funcBlockNum = 0
         self.setAcceptDrops(True)
@@ -118,31 +119,6 @@ class Ui_MainWindow(object):
         self.flowScrollContents.setObjectName("flowScrollContents")
         self.flowVertLayout = QtWidgets.QVBoxLayout(self.flowScrollContents)
         self.flowVertLayout.setObjectName("flowVertLayout")
-        """
-        self.layer1Box = QtWidgets.QHBoxLayout()
-        self.layer1Box.setObjectName("layer1Box")
-        self.layer1Lbl = QtWidgets.QLabel(self.flowScrollContents)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.MinimumExpanding, QtWidgets.QSizePolicy.Policy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.layer1Lbl.sizePolicy().hasHeightForWidth())
-        self.layer1Lbl.setSizePolicy(sizePolicy)
-        self.layer1Lbl.setMinimumSize(QtCore.QSize(100, 20))
-        self.layer1Lbl.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
-        self.layer1Lbl.setObjectName("layer1Lbl")
-        self.layer1Box.addWidget(self.layer1Lbl)
-        self.layer1Del = QtWidgets.QPushButton(self.flowScrollContents)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.layer1Del.sizePolicy().hasHeightForWidth())
-        self.layer1Del.setSizePolicy(sizePolicy)
-        self.layer1Del.setMinimumSize(QtCore.QSize(20, 20))
-        self.layer1Del.setCheckable(False)
-        self.layer1Del.setObjectName("layer1Del")
-        self.layer1Box.addWidget(self.layer1Del)
-        self.flowVertLayout.addLayout(self.layer1Box)
-        """
         spacerItem1 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.flowVertLayout.addItem(spacerItem1)
         self.flowScroll.setWidget(self.flowScrollContents)
@@ -176,6 +152,8 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.action_Save = QtGui.QAction(MainWindow)
         self.action_Save.setObjectName("action_Save")
+        self.action_SaveAs = QtGui.QAction(MainWindow)
+        self.action_SaveAs.setObjectName("action_SaveAs")
         self.actionOpen = QtGui.QAction(MainWindow)
         self.actionOpen.setObjectName("actionOpen")
         self.actionView_Messages = QtGui.QAction(MainWindow)
@@ -189,6 +167,7 @@ class Ui_MainWindow(object):
         self.actionAddFunc = QtGui.QAction(MainWindow)
         self.actionAddFunc.setObjectName("actionAddFunc")
         self.menuFile.addAction(self.action_Save)
+        self.menuFile.addAction(self.action_SaveAs)
         self.menuFile.addAction(self.actionOpen)
         self.menuMessages.addAction(self.actionView_Messages)
         self.menuRun.addAction(self.actionConfig)
@@ -207,18 +186,14 @@ class Ui_MainWindow(object):
 
         self.addLayer()
 
-        tray = QtWidgets.QSystemTrayIcon()
-        tray.setIcon(app_icon)
-        tray.setVisible(True)
-
-        #self.funcBtn.clicked.connect(self.addFunc)
         self.addLayerBtn.clicked.connect(self.addLayer)
         self.addEnvPropBtn.clicked.connect(self.addEnvProp)
         self.actionView_Messages.triggered.connect(self.openMsg)
         self.actionAddAgent.triggered.connect(self.openAgentAdd)
         self.actionAddFunc.triggered.connect(self.createFunctionBlock)
         self.actionConfig.triggered.connect(self.openConfig)
-        #self.layer1Del.clicked.connect(lambda: self.deleteLayer(self.layer1Del))
+        self.action_Save.triggered.connect(self.saveFile)
+        self.action_SaveAs.triggered.connect(self.saveAs)
 
 
         self.retranslateUi(MainWindow)
@@ -229,8 +204,6 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "FLAMEGPU2"))
         self.envPropTitle.setText(_translate("MainWindow", "Environment Properties"))
         self.addEnvPropBtn.setText(_translate("MainWindow", "Add Property"))
-        #self.layer1Lbl.setText(_translate("MainWindow", "Layer 1:"))
-        #self.layer1Del.setText(_translate("MainWindow", "X"))
         self.flowTitle.setText(_translate("MainWindow", "Control Flow"))
         self.addLayerBtn.setText(_translate("MainWindow", "Add Layer"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
@@ -238,6 +211,7 @@ class Ui_MainWindow(object):
         self.menuRun.setTitle(_translate("MainWindow", "Run"))
         self.menuAgent.setTitle(_translate("MainWindow", "Agent"))
         self.action_Save.setText(_translate("MainWindow", "Save"))
+        self.action_SaveAs.setText(_translate("MainWindow", "Save As"))
         self.actionOpen.setText(_translate("MainWindow", "Open"))
         self.actionView_Messages.setText(_translate("MainWindow", "View"))
         self.actionConfig.setText(_translate("MainWindow", "Config"))
@@ -262,8 +236,6 @@ class Ui_MainWindow(object):
 
 
         
-
-
     def createFunctionBlock(self):
         self.funcBlockNum += 1
         self.newFuncBlock = FuncBlock(self, f"Function_{self.funcBlockNum}_Name", self.funcBlockNum, self.message_list)
@@ -515,6 +487,72 @@ class Ui_MainWindow(object):
     def agentRemoved(self, index):
         if index in self.lines.keys():
             self.lines.pop(index)
+    
+    def saveAs(self):
+        homeDir = str(os.getcwd())
+        fileName = QtWidgets.QFileDialog.getSaveFileName(self, 'Save As', homeDir, "*.json")
+        if fileName[0]:
+            self.saveLoc = fileName[0]
+            self.saveFile()
+
+
+    def saveFile(self):
+
+        layersJSON = {}
+        layerNum = 1
+        for i in range(self.flowVertLayout.count()):
+            item = self.flowVertLayout.itemAt(i)
+            if item.widget() != None:
+                itemName = item.widget().objectName()
+            elif item.layout() != None:
+                itemName = item.layout().objectName()
+            else:
+                continue
+
+            if itemName[:5] == "layer":
+                layerNum = itemName[5:-3]
+                layersJSON[layerNum] = []
+            elif itemName[:4] == "func":
+                layersJSON[layerNum].append(item.widget().text())
+
+        envVarsJSON = {}
+
+        for i in range(self.envVertLayout.count()):
+            item = self.envVertLayout.itemAt(i)
+            if item.spacerItem() != None:
+                continue
+            
+            itemIndex = item.layout().objectName()[7:-3]
+            print(itemIndex)
+
+            name = self.envPropScrollContainer.findChild(QtWidgets.QLineEdit, f"envName{itemIndex}").text()
+            typ = self.envPropScrollContainer.findChild(QtWidgets.QComboBox, f"envType{itemIndex}").currentText()
+            value = self.envPropScrollContainer.findChild(QtWidgets.QLineEdit, f"envVal{itemIndex}").text()
+
+            tempDict = {"name": name, "type": typ, "value": value}
+            envVarsJSON[itemIndex] = tempDict
+
+        msgsJSON = {}
+        for index, msg in enumerate(self.message_list):
+            msgsJSON[1] = {"name": msg.name, "type": msg.msg_type, "vars": msg.vars, "var_types": msg.var_types}
+        
+
+
+        funcBlockList = self.findChildren(FuncBlock)
+        funcBlocksJSON = {}
+        for i, block in enumerate(funcBlockList):
+            funcBlocksJSON[i] = {"name": block.name, "index": block.index, "message": block.message, "inp_type": block.inp_type, "out_type": block.out_type}
+
+        agentBlockList = self.findChildren(AgentBlock)
+        agentBlocksJSON = {}
+        for i, block in enumerate(agentBlockList):
+            agentBlocksJSON[i] = {"name": block.name, "index": block.index, "var_names": block.var_names, "var_types": block.var_types}
+
+        saveJSON = {"layers": layersJSON, "environment_variables": envVarsJSON, "messages": msgsJSON, "function_blocks": funcBlocksJSON, "agent_blocks": agentBlocksJSON}
+
+        with open(self.saveLoc, 'w') as outfile:
+            json.dump(saveJSON, outfile)
+
 
 
     def openMsg(self):

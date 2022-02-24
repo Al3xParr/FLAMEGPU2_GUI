@@ -22,6 +22,8 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         self.agentIndex = None
         self.funcIndex = None
 
+        self.saveLoc = ""
+
 
     def dragEnterEvent(self, e):
         e.accept()

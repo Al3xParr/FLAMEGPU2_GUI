@@ -130,6 +130,7 @@ class Ui_messageDialog(object):
 
 
     def addVar(self):
+        self.vars += 1
         self.newVarBox = QtWidgets.QHBoxLayout()
         self.newVarBox.setObjectName(f"var{self.vars}Box")
         self.newVarType = QtWidgets.QComboBox(self.varScrollContainer)
@@ -169,17 +170,25 @@ class Ui_messageDialog(object):
         self.newVarDel.setMinimumSize(QtCore.QSize(20, 20))
         self.newVarDel.setObjectName(f"var{self.vars}Del")
         self.newVarDel.setText("X")
+
+        self.newVarDel.clicked.connect(self.deleteVar)
+
         self.newVarBox.addWidget(self.newVarDel)
 
         children = self.varVertLayout.count()
         self.varVertLayout.insertLayout(children-1, self.newVarBox)
 
-        self.vars += 1
+    def deleteVar(self):
+        index = "".join([n for n in self.sender().objectName() if n.isdigit()])
+        self.removeVar(index)
     
     def removeVar(self, index):
-        components = self.varScrollContainer.findChildren((QtWidgets.QGridLayout, QtWidgets.QLineEdit, QtWidgets.QPushButton, QtWidgets.QComboBox), QtCore.QRegularExpression(f"\w*{index}\w*"))
+        
+        widgetTypes = (QtWidgets.QGridLayout, QtWidgets.QLineEdit, QtWidgets.QPushButton, QtWidgets.QComboBox)
+        components = self.varScrollContainer.findChildren(widgetTypes, QtCore.QRegularExpression(f"\w*{index}\w*"))
         for w in components:
             w.setParent(None)
+        self.vars -= 1
 
 
     def addMsg(self):
@@ -189,7 +198,7 @@ class Ui_messageDialog(object):
         contents = self.varScrollContainer.children()
         contents_names = [c.objectName() for c in contents]
 
-        for i in range(self.vars):
+        for i in range(1, self.vars+1):
             a = contents_names.index(f"var{i}Type")
             msgVarsType.append(contents[a].currentText())
             contents[a].setCurrentIndex(0)
@@ -200,8 +209,8 @@ class Ui_messageDialog(object):
                 return
             msgVars.append(contents[a].text())
             contents[a].setText("")
-            if i > 0:
-                self.removeVar(i)
+
+            self.removeVar(i)
 
 
         
@@ -223,7 +232,7 @@ class Ui_messageDialog(object):
         return False
     
     def delMsg(self):
-        index = "".join([n for n in self.sender.objectName() if n.isdigit()])
+        index = "".join([n for n in self.sender().objectName() if n.isdigit()])
 
         confirmBox = QtWidgets.QMessageBox()
         msgName = self.findChild(QtWidgets.QLabel, f"msg{index}Name").text()
@@ -236,6 +245,8 @@ class Ui_messageDialog(object):
             widgets = self.findChildren((QtWidgets.QGridLayout, QtWidgets.QLabel, QtWidgets.QPushButton), QtCore.QRegularExpression(f"\w*{index}\w*"))
             for w in widgets:
                 w.setParent(None)
+        
+        self.msgs -= 1
 
 
         
