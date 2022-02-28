@@ -1,6 +1,6 @@
 import numpy as np
 
-class message():
+class Message():
     def __init__(self, name, msg_type, vars, var_types):
         self.name = name
         self.msg_type = msg_type

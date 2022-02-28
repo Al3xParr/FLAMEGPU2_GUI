@@ -34,7 +34,6 @@ class Block(QFrame):
 
     def mouseMoveEvent(self, e):
         if e.buttons() == Qt.MouseButton.LeftButton:
-            #self.update()
             drag = QDrag(self)
             mime = QMimeData()
             drag.setMimeData(mime)
@@ -52,14 +51,12 @@ class Block(QFrame):
         return False
 
 
-
-
 class FuncBlock(Block):
 
     def __init__(self, parent, name, index, messages, inp_type = "", out_type = ""):
         super().__init__(parent, name, index)
         self.inp_type = inp_type
-        self.out_tpye = out_type
+        self.out_type = out_type
         self.msg_list = messages
 
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
@@ -83,6 +80,7 @@ class FuncBlock(Block):
         sizePolicy.setHeightForWidth(self.inpCombo.sizePolicy().hasHeightForWidth())
         self.inpCombo.setSizePolicy(sizePolicy)
         self.inpCombo.setMinimumSize(QtCore.QSize(0, 20))
+        self.inpCombo.currentTextChanged.connect(self.inpChange)
         
         self.outCombo = QtWidgets.QComboBox()
         self.outCombo.setObjectName("messageComboOut")
@@ -90,6 +88,7 @@ class FuncBlock(Block):
         sizePolicy.setHeightForWidth(self.outCombo.sizePolicy().hasHeightForWidth())
         self.outCombo.setSizePolicy(sizePolicy)
         self.outCombo.setMinimumSize(QtCore.QSize(0, 20))
+        self.outCombo.currentTextChanged.connect(self.outChange)
         
         for i, msg in enumerate(self.msg_list):
             self.inpCombo.addItem(msg.name)
@@ -107,11 +106,25 @@ class FuncBlock(Block):
         self.delBtn.clicked.connect(self.remove)
         self.gridLayout.addWidget(self.delBtn, 3, 0)
 
+        if self.inp_type != "":
+            i = self.inpCombo.findText(self.inp_type)
+            self.inpCombo.setCurrentIndex(i)
+
+        if self.out_type != "":
+            i = self.outCombo.findText(self.out_type)
+            self.outCombo.setCurrentIndex(i)
+
         self.nameLbl.textChanged.connect(self.changeName)
     
     def changeName(self):
         self.name = self.nameLbl.text()
         self.parent().findChild(QtWidgets.QLabel, f"function{self.index}").setText(self.name)
+    
+    def inpChange(self):
+        self.inp_type = self.inpCombo.currentText()
+    
+    def outChange(self):
+        self.out_type = self.outCombo.currentText()
     
     def dragged(self, point):
         newPos = QtCore.QPoint(point-self.drag_start_position)
@@ -138,7 +151,7 @@ class AgentBlock(Block):
     def __init__(self, parent, name, index, var_names = None, var_types = None):
         super().__init__(parent, name, index)
 
-        self.connecterPos = QtCore.QPoint(150, 50)
+        #self.connecterPos = QtCore.QPoint(150, 50)
         
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)

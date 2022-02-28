@@ -13,7 +13,7 @@ from msgDialog import MsgDialog
 from agentDialog import AgentDialog
 from configDialog import ConfigDialog
 from Blocks import AgentBlock, FuncBlock
-from structures import message
+from structures import Message
 import json
 import os
 
@@ -187,14 +187,14 @@ class Ui_MainWindow(object):
         self.addLayer()
 
         self.addLayerBtn.clicked.connect(self.addLayer)
-        self.addEnvPropBtn.clicked.connect(self.addEnvProp)
+        self.addEnvPropBtn.clicked.connect(lambda: self.addEnvProp())
         self.actionView_Messages.triggered.connect(self.openMsg)
         self.actionAddAgent.triggered.connect(self.openAgentAdd)
-        self.actionAddFunc.triggered.connect(self.createFunctionBlock)
+        self.actionAddFunc.triggered.connect(lambda: self.createFunctionBlock())
         self.actionConfig.triggered.connect(self.openConfig)
         self.action_Save.triggered.connect(self.saveFile)
         self.action_SaveAs.triggered.connect(self.saveAs)
-
+        self.actionOpen.triggered.connect(self.loadFile)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -236,15 +236,26 @@ class Ui_MainWindow(object):
 
 
         
-    def createFunctionBlock(self):
+    def createFunctionBlock(self, name = "", inp = "", out = "", pos = None, index = None):
+
+        if pos == None:
+            pos = QtCore.QPoint(500, 500)
         self.funcBlockNum += 1
-        self.newFuncBlock = FuncBlock(self, f"Function_{self.funcBlockNum}_Name", self.funcBlockNum, self.message_list)
-        self.newFuncBlock.setObjectName(f"Function{self.funcBlockNum}Block")
+
+        if name == "":
+            name = f"Function_{self.funcBlockNum}_Name"
+
+        if index == None:
+            index = self.funcBlockNum
+
+        self.newFuncBlock = FuncBlock(self, name, index, self.message_list, inp, out)
+        self.newFuncBlock.setObjectName(f"Function{index}Block")
+        self.newFuncBlock.move(pos)
         self.newConenctor = Circle(self)
-        self.newConenctor.move(QtCore.QPoint(492, 532))
-        self.newConenctor.setObjectName(f"Function{self.funcBlockNum}Circle")
+        self.newConenctor.move(pos + QtCore.QPoint(-8, 32))
+        self.newConenctor.setObjectName(f"Function{index}Circle")
         self.newConenctor.show()
-        self.funcPositions[self.funcBlockNum] = QtCore.QPoint(500, 500)
+        self.funcPositions[index] = pos
         self.addFunc()
 
     def paintEvent(self, e):
@@ -259,9 +270,12 @@ class Ui_MainWindow(object):
         pen = QtGui.QPen(Qt.GlobalColor.black, 2, Qt.PenStyle.SolidLine)
 
         for key, val in self.lines.items():
+
             for item in val:
                 paint.setPen(pen) 
-                paint.drawLine(self.agentPositions[key] + QtCore.QPoint(150, 40), self.funcPositions[item] + QtCore.QPoint(0, 40))
+                start = self.agentPositions[int(key)] + QtCore.QPoint(150, 40)
+                end = self.funcPositions[item] + QtCore.QPoint(0, 40)
+                paint.drawLine(start, end)
 
     def drawCurrentLine(self, paint):
 
@@ -322,7 +336,7 @@ class Ui_MainWindow(object):
         self.newLbl.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.flowVertLayout.insertWidget(self.flowVertLayout.count()-1, self.newLbl)
 
-    def addEnvProp(self):
+    def addEnvProp(self, name = "", dataType = "", val = ""):
 
         self.envProps += 1
 
@@ -376,18 +390,34 @@ class Ui_MainWindow(object):
 
         self.newEnvDel.clicked.connect(self.removeItem)
 
+        if name != "":
+            self.newEnvName.setText(name)
+        if dataType != "":
+            temp = self.newEnvType.findText(dataType)
+            self.newEnvType.setCurrentIndex(temp)
+        if val != "":
+            self.newEnvVal = val
+
         children = self.envVertLayout.count()
         self.envVertLayout.insertLayout(children-1, self.newEnvPropBox)
 
-    def createAgentBlock(self, name, vars, var_types):
+    def createAgentBlock(self, name, vars, var_types, pos = None, index = None):
+        if pos == None:
+            pos = QtCore.QPoint(500, 500)
+        
         self.agentBlockNum += 1
-        self.newAgentBlock = AgentBlock(self, name, self.agentBlockNum, vars, var_types)
-        self.newAgentBlock.setObjectName(f"Agent{self.agentBlockNum}Block")
+
+        if index == None:
+            index = self.agentBlockNum
+
+        self.newAgentBlock = AgentBlock(self, name, index, vars, var_types)
+        self.newAgentBlock.setObjectName(f"Agent{index}Block")
+        self.newAgentBlock.move(pos)
         self.newConenctor = Circle(self)
-        self.newConenctor.move(QtCore.QPoint(642, 532))
-        self.newConenctor.setObjectName(f"Agent{self.agentBlockNum}Circle")
+        self.newConenctor.move(pos + QtCore.QPoint(142, 32))
+        self.newConenctor.setObjectName(f"Agent{index}Circle")
         self.newConenctor.show()
-        self.agentPositions[self.agentBlockNum] = QtCore.QPoint(500, 500)
+        self.agentPositions[index] = pos
 
     def agentMoved(self, index, newPos):
         self.agentPositions[index] = newPos
@@ -457,12 +487,14 @@ class Ui_MainWindow(object):
         return True
     
     def createMessage(self, name, msg_type, vars, var_types):
-        new_msg = message(name, msg_type, vars, var_types)
+        new_msg = Message(name, msg_type, vars, var_types)
         self.message_list.append(new_msg)
         
         combo_list = self.findChildren(QtWidgets.QComboBox, QtCore.QRegularExpression("^messageCombo.*"))
         for combo in combo_list:
             combo.addItem(name)
+        
+        print(self.message_list)
         return new_msg
     
     def messageDeleted(self, name):
@@ -497,6 +529,9 @@ class Ui_MainWindow(object):
 
 
     def saveFile(self):
+        if self.saveLoc == "":
+            self.saveAs()
+            return
 
         layersJSON = {}
         layerNum = 1
@@ -534,25 +569,77 @@ class Ui_MainWindow(object):
 
         msgsJSON = {}
         for index, msg in enumerate(self.message_list):
-            msgsJSON[1] = {"name": msg.name, "type": msg.msg_type, "vars": msg.vars, "var_types": msg.var_types}
+            msgsJSON[index] = {"name": msg.name, "type": msg.msg_type, "vars": msg.vars, "var_types": msg.var_types}
         
 
 
         funcBlockList = self.findChildren(FuncBlock)
         funcBlocksJSON = {}
         for i, block in enumerate(funcBlockList):
-            funcBlocksJSON[i] = {"name": block.name, "index": block.index, "message": block.message, "inp_type": block.inp_type, "out_type": block.out_type}
+            p = block.pos()
+            pos = [p.x(), p.y()]
+            funcBlocksJSON[i] = {"name": block.name, "index": block.index, "pos": pos, "inp_type": block.inp_type, "out_type": block.out_type}
 
         agentBlockList = self.findChildren(AgentBlock)
         agentBlocksJSON = {}
         for i, block in enumerate(agentBlockList):
-            agentBlocksJSON[i] = {"name": block.name, "index": block.index, "var_names": block.var_names, "var_types": block.var_types}
+            p = block.pos()
+            pos = [p.x(), p.y()]
+            agentBlocksJSON[i] = {"name": block.name, "index": block.index, "pos": pos, "var_names": block.var_names, "var_types": block.var_types}
 
-        saveJSON = {"layers": layersJSON, "environment_variables": envVarsJSON, "messages": msgsJSON, "function_blocks": funcBlocksJSON, "agent_blocks": agentBlocksJSON}
 
-        with open(self.saveLoc, 'w') as outfile:
+        saveJSON = {"layers": layersJSON, "environment_variables": envVarsJSON, "messages": msgsJSON, "function_blocks": funcBlocksJSON, "agent_blocks": agentBlocksJSON, "lines": self.lines}
+
+        with open(self.saveLoc, "w") as outfile:
             json.dump(saveJSON, outfile)
+    
+        
+    def loadFile(self):
+        homeDir = str(os.getcwd())
+        fileName = QtWidgets.QFileDialog.getOpenFileName(self, 'Open File', homeDir, "*.json")
+        if not fileName[0]:
+            return
+        
+        with open(fileName[0], "r") as fileLoc:
+            data = json.load(fileLoc)
+            
+            try:
+                layersData = data["layers"]
+                envVarsData = data["environment_variables"]
+                messagesData = data["messages"]
+                funcBlocksData = data["function_blocks"]
+                agentBlocksData = data["agent_blocks"]
+                linesData = data["lines"]
+            except:
+                print("load error")
+                return
+            
+        #Resets all variables storing data about state of program
+        self.layers = 0
+        self.functions = 0
+        self.envProps = 0
+        self.agentBlockNum = 0
+        self.funcBlockNum = 0
+        self.message_list = []
+        self.lines = {}
+        self.agentPositions = {}
+        self.funcPositions = {}
 
+        self.lines = linesData
+
+        for msg in messagesData.values():
+            self.message_list.append(Message(msg["name"], msg["type"], msg["vars"], msg["var_types"]))
+
+        for var in envVarsData.values():
+            self.addEnvProp(var["name"], var["type"], var["value"])
+        
+        for key, aBlock in agentBlocksData.items():
+            pos = QtCore.QPoint(aBlock["pos"][0], aBlock["pos"][1])
+            self.createAgentBlock(aBlock["name"], aBlock["var_names"], aBlock["var_types"], pos, aBlock["index"])
+
+        for key, fBlock in funcBlocksData.items():
+            pos = QtCore.QPoint(fBlock["pos"][0], fBlock["pos"][1])
+            self.createFunctionBlock(fBlock["name"], fBlock["inp_type"], fBlock["out_type"], pos, fBlock["index"])
 
 
     def openMsg(self):

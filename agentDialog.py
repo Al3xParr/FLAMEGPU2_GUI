@@ -78,6 +78,7 @@ class Ui_agentDialog(object):
 
         if not structures.isValidName(self.newAgentName.text()):
             self.errorMsg("Agent name")
+            return
         
         for i in range(self.vars):
             a = contents_names.index(f"varType{i}")
