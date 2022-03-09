@@ -2,10 +2,12 @@ from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtWidgets import QMainWindow, QApplication
 from PyQt6.QtCore import Qt, QPoint
 
-from modClasses import Circle
+from structures import Message
 import sys
+import codeGen
 
 from mainWindow import Ui_MainWindow
+from Blocks import AgentBlock
 
 
 
@@ -67,6 +69,8 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
                 self.lineStart = self.agentPositions[self.agentIndex] + QtCore.QPoint(150, 40)
                 self.lineEnd = pos.toPoint()
                 self.update()
+        elif e.buttons() == Qt.MouseButton.RightButton:
+            print(e.source().objectName())
 
     def mouseMoveEvent(self, e):
         if e.buttons() == Qt.MouseButton.LeftButton:
@@ -92,6 +96,48 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         self.simName = name
         self.steps = steps
         self.seed = seed
+    
+
+    def buildScript(self):
+        #Name
+        #Seed
+        #env Props
+        #messages
+        #agents
+        #agent funcs
+        #agetn func ordered
+
+        self.saveFile()
+
+
+        script = codeGen.CodeGen()
+
+        script.write(["import pyflamegpu", "import sys, random, math", "import matplotlib.pyplot as plt"])
+        script.write(f"model = pyflamegpu.ModelDescription({self.simName})")
+        script.write(f"seed = {self.seed}")
+        script.write("env = model.Environment()")
+
+        envProps = self.getEnvProps()
+
+        for prop in envProps.values():
+            script.write(f"env.newProperty{prop.type}(\"{prop.name}\", {prop.value})")
+        
+
+        for msg in self.message_list:
+            script.write(f"message = model.new{msg.msg_type}(\"{msg.name}\")")
+            for var, var_type in zip(msg.vars, msg.var_types):
+                script.write("message.newVariable{var_type}(\"var\")")
+        
+        aBlocks = self.findChildren(AgentBlock)
+
+        for block in aBlocks:
+            script.write(f"agent = model.newAgent(\"{block.name}\"")
+            for var, var_type in zip(block.var_names, block.var_types):
+                script.write(f"agent.newVariable{var_type}(\"{var}\")")
+        
+        script.write("VISUALISATION = True")
+
+        script.save(self.saveLoc[:-5])
 
 
 

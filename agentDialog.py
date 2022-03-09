@@ -58,9 +58,10 @@ class Ui_agentDialog(object):
 
         self.retranslateUi(agentDialog)
         #self.buttonBox.accepted.connect(agentDialog.accept) # type: ignore
-        self.buttonBox.accepted.connect(self.createAgent)
+        self.buttonBox.accepted.connect(lambda: self.createAgent())
         self.buttonBox.rejected.connect(agentDialog.reject) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(agentDialog)
+    
 
     def retranslateUi(self, agentDialog):
         _translate = QtCore.QCoreApplication.translate
@@ -68,10 +69,11 @@ class Ui_agentDialog(object):
         self.newAgentName.setPlaceholderText(_translate("agentDialog", "Agent Name"))
         self.agentAddVarBtn.setText(_translate("agentDialog", "Add Variable"))
 
-    def createAgent(self):
+    def createAgent(self, update: bool = False, index: int = None):
         name = self.newAgentName.text()
         agent_vars = []
         agent_var_types = []
+        agent_var_vals = []
 
         contents = self.agentScrollContainer.children()
         contents_names = [c.objectName() for c in contents]
@@ -95,9 +97,15 @@ class Ui_agentDialog(object):
 
             agent_var_types.append(contents[a].currentText())
             agent_vars.append(contents[b].text())
+            agent_var_vals.append(contents[c].text())
 
-        self.parent().createAgentBlock(name, agent_vars, agent_var_types)
+        if update:
+            self.parent().updateAgentBlock(index, name,agent_vars, agent_var_types, agent_var_vals)
+        else:
+            self.parent().createAgentBlock(name, agent_vars, agent_var_types, agent_var_vals)
         self.accept()
+    
+
     
     def errorMsg(self, string):
 
@@ -111,7 +119,8 @@ class Ui_agentDialog(object):
             return True
         return False
 
-    def addVar(self):
+    def addVar(self, varName = "", varType = "", varVal = ""):
+
         
         self.newVarBox = QtWidgets.QHBoxLayout()
         self.newVarBox.setObjectName(f"varBox{self.vars}")
@@ -165,6 +174,14 @@ class Ui_agentDialog(object):
         self.newVarDel.setText("X")
         self.newVarBox.addWidget(self.newVarDel)
 
+
+        if varType != "":
+            self.newVarName.setText(varName)
+            self.newVarVal.setText(varVal)
+            temp = self.newVarType.findText(varType)
+            self.newVarType.setCurrentIndex(temp)
+
+
         self.newVarDel.clicked.connect(self.removeItem)
 
         children = self.agentVertLayout.count()
@@ -196,6 +213,21 @@ class Ui_agentDialog(object):
 
 
 class AgentDialog(QDialog, Ui_agentDialog):
-    def __init__(self, parent = None):
+    def __init__(self, parent = None, index = None, name = None, vars = None, varTypes = None, varVals = None):
         super(AgentDialog, self).__init__(parent)
         self.setupUi(self)
+        
+        if index != None:
+            self.setWindowTitle("Edit Agent")
+
+            self.newAgentName.setText(name)
+            for (a, b, c) in zip(vars, varTypes, varVals):
+                self.addVar(a, b, c)
+
+            self.buttonBox.accepted.disconnect()
+            self.buttonBox.accepted.connect(lambda: self.createAgent(True, index))
+        
+
+        
+
+
