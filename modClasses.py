@@ -21,7 +21,6 @@ class Circle(QWidget):
 
     def __init__(self, parent):
         super().__init__(parent)
-        #self.setGeometry(0, 0, 100, 100)
 
     def paintEvent(self, e):
         painter = QPainter(self)
@@ -31,7 +30,5 @@ class Circle(QWidget):
         painter.drawEllipse(QRect(0, 0, 15, 15))
 
     def dragged(self, point):
-        #newPos = QtCore.QPoint(point-self.drag_start_position)
         self.move(point)
-        #self.parent().funcMoved(self.index, newPos)
     

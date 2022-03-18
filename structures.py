@@ -16,6 +16,9 @@ def isValidName(name: str):
         return False
 
 def checkVar(val: str, varType: str):
+
+
+    varType = varType.lower()
     
     if varType == "float":
         try:

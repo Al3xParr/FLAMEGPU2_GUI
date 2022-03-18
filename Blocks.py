@@ -13,7 +13,7 @@ class Block(QFrame):
         self.connecterPos = QtCore.QPoint(20, 50)
         
         self.drag_start_position = QtCore.QPoint(0, 0)
-        self.setGeometry(500, 500, 200, 150)
+        self.setGeometry(500, 500, 200, 250)
 
         self.setAutoFillBackground(True)
 
@@ -53,11 +53,12 @@ class Block(QFrame):
 
 class FuncBlock(Block):
 
-    def __init__(self, parent, name, index, messages, inp_type = "", out_type = ""):
+    def __init__(self, parent, name, index, messages, inp_type = "", out_type = "", code = ""):
         super().__init__(parent, name, index)
         self.inp_type = inp_type
         self.out_type = out_type
         self.msg_list = messages
+        self.code = code
 
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -100,6 +101,14 @@ class FuncBlock(Block):
         self.gridLayout.addWidget(self.inpCombo, 1, 0)
         self.gridLayout.addWidget(self.outCombo, 2, 0)
 
+        self.codeTxtEdit = QtWidgets.QTextEdit()
+        self.codeTxtEdit.setObjectName("codeTxtEdit")
+        self.codeTxtEdit.setPlaceholderText("Agent Function Behaviour Code...")
+        sizePolicy.setHeightForWidth(self.codeTxtEdit.sizePolicy().hasHeightForWidth())
+        self.codeTxtEdit.setSizePolicy(sizePolicy)
+        self.codeTxtEdit.setMinimumSize(QtCore.QSize(0, 100))
+        self.gridLayout.addWidget(self.codeTxtEdit, 3, 0)
+
         self.delBtn = QtWidgets.QPushButton(self)
         sizePolicy.setHeightForWidth(self.delBtn.sizePolicy().hasHeightForWidth())
         self.delBtn.setSizePolicy(sizePolicy)
@@ -107,7 +116,7 @@ class FuncBlock(Block):
         self.delBtn.setObjectName("funcDel")
         self.delBtn.setText("Delete Function")
         self.delBtn.clicked.connect(self.remove)
-        self.gridLayout.addWidget(self.delBtn, 3, 0)
+        self.gridLayout.addWidget(self.delBtn, 4, 0)
 
         if self.inp_type != "":
             i = self.inpCombo.findText(self.inp_type)

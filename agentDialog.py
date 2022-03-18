@@ -87,12 +87,17 @@ class Ui_agentDialog(object):
             b = contents_names.index(f"varName{i}")
             c = contents_names.index(f"varVal{i}")
 
+            #Validation
             if not structures.isValidName(contents[b].text()):
                 self.errorMsg("Variable name invalid")
                 return
             
-            if not structures.checkVar(contents[c].text(), contents[a].currentText().lower()):
+            if not structures.checkVar(contents[c].text(), contents[a].currentText()):
                 self.errorMsg("Value does not match type")
+                return
+        
+            if contents[b].text() in agent_vars:
+                self.errorMsg("Duplicate variable name")
                 return
 
             agent_var_types.append(contents[a].currentText())
@@ -177,7 +182,7 @@ class Ui_agentDialog(object):
 
         if varType != "":
             self.newVarName.setText(varName)
-            self.newVarVal.setText(varVal)
+            self.newVarVal.setText(str(varVal))
             temp = self.newVarType.findText(varType)
             self.newVarType.setCurrentIndex(temp)
 
