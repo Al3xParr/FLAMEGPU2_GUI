@@ -149,7 +149,7 @@ if not cudaSimulation.SimulationConfig().input_file:
             cell.setVariableInt("y_pos", y)
             cell.setVariableFloat("x", x)
             cell.setVariableFloat("y", y)
-            #print([x*SQRT_AGENT_COUNT+y, x, y])
+
             if random.uniform(0, 1) < 0.3:
                 cell.setVariableInt("is_alive", 1)
             else:

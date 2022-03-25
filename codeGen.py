@@ -7,13 +7,12 @@ class CodeGen:
         self.tab = tab
         self.level = 0
 
-    def write(self, lines: list, indent = 0):
-        for line in lines:
-            self.code.append(self.tab * self.level + line)
-        self.indent(indent)
-
-    def write(self, line: str, indent = 0):
-        self.code.append(self.tab * self.level + line)
+    def write(self, lines, indent = 0):
+        if isinstance(lines, list):
+            for line in lines:
+                self.code.append(self.tab * self.level + line)
+        else:
+            self.code.append(self.tab * self.level + lines)
         self.indent(indent)
 
     def indent(self, indent = 1):

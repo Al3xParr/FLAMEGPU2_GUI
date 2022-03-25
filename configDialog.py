@@ -55,6 +55,7 @@ class Ui_configDialog(object):
         self.stepsLbl.setObjectName("stepsLbl")
         self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.ItemRole.LabelRole, self.stepsLbl)
         self.stepsEdit = QtWidgets.QSpinBox(self.configScrollContianer)
+        self.stepsEdit.setMaximum(2147483647)
         self.stepsEdit.setObjectName("steps")
         self.stepsEdit.setValue(self.steps)
         self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.ItemRole.FieldRole, self.stepsEdit)
@@ -62,8 +63,9 @@ class Ui_configDialog(object):
         self.seedLbl.setObjectName("seedLbl")
         self.formLayout_2.setWidget(2, QtWidgets.QFormLayout.ItemRole.LabelRole, self.seedLbl)
         self.seedEdit = QtWidgets.QSpinBox(self.configScrollContianer)
+        self.seedEdit.setMaximum(2147483647)
         self.seedEdit.setObjectName("seed")
-        self.seedEdit.setValue(self.seed)
+        if self.seed is not None: self.seedEdit.setValue(self.seed)
         self.formLayout_2.setWidget(2, QtWidgets.QFormLayout.ItemRole.FieldRole, self.seedEdit)
         self.configScroll.setWidget(self.configScrollContianer)
 
@@ -89,7 +91,7 @@ class Ui_configDialog(object):
         self.parent().assignConfig(name, steps, seed)
 
 class ConfigDialog(QDialog, Ui_configDialog):
-    def __init__(self, parent = None, name = "", steps = "", seed = ""):
+    def __init__(self, parent = None, name = "", steps = "", seed = None):
         super(ConfigDialog, self).__init__(parent)
         self.name = name 
         self.steps = steps

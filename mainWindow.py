@@ -410,7 +410,7 @@ class Ui_MainWindow(object):
         children = self.envVertLayout.count()
         self.envVertLayout.insertLayout(children-1, self.newEnvPropBox)
 
-    def createAgentBlock(self, name, vars, var_types, var_vals, pos = None, index = None):
+    def createAgentBlock(self, name, vars, var_types, var_vals, pos = None, index = None, pop = None):
         if pos == None:
             pos = QtCore.QPoint(500, 500)
         
@@ -419,7 +419,7 @@ class Ui_MainWindow(object):
         if index == None:
             index = self.agentBlockNum
 
-        self.newAgentBlock = AgentBlock(self, name, index, vars, var_types, var_vals)
+        self.newAgentBlock = AgentBlock(self, name, index, vars, var_types, var_vals, pop)
         self.newAgentBlock.setObjectName(f"Agent{index}Block")
         self.newAgentBlock.move(pos)
         self.newConenctor = Circle(self)
@@ -428,9 +428,9 @@ class Ui_MainWindow(object):
         self.newConenctor.show()
         self.agentPositions[index] = pos
     
-    def updateAgentBlock(self, index, name, vars, var_types, var_vals):
+    def updateAgentBlock(self, index, name, vars, var_types, var_vals, pop):
         block = self.findChild(AgentBlock, f"Agent{index}Block")
-        block.updateVariables(name, vars, var_types, var_vals)
+        block.updateVariables(name, vars, var_types, var_vals, pop)
         
 
     def agentMoved(self, index, newPos):
@@ -557,16 +557,8 @@ class Ui_MainWindow(object):
                 return False
         
         return True
-
-
-    def saveFile(self):
-        if self.saveLoc == "":
-            self.saveAs()
-            return
-        
-        if not self.checkAllInputs():
-            return
-
+    
+    def getLayersData(self):
         layersJSON = {}
         layerNum = 1
         for i in range(self.flowVertLayout.count()):
@@ -583,9 +575,21 @@ class Ui_MainWindow(object):
                 layersJSON[layerNum] = []
             elif itemName[:4] == "func":
                 layersJSON[layerNum].append(item.widget().text())
+        
+        return layersJSON
+
+
+    def saveFile(self):
+        if self.saveLoc == "":
+            self.saveAs()
+            return
+        
+        if not self.checkAllInputs():
+            return
+
+        layersJSON = self.getLayersData()
 
         envVarsJSON = self.getEnvProps()
-
 
         msgsJSON = {}
         for index, msg in enumerate(self.message_list):
@@ -604,10 +608,10 @@ class Ui_MainWindow(object):
         for i, block in enumerate(agentBlockList):
             p = block.pos()
             pos = [p.x(), p.y()]
-            agentBlocksJSON[i] = {"name": block.name, "index": block.index, "pos": pos, "var_names": block.var_names, "var_types": block.var_types, "var_values": block.var_vals}
+            agentBlocksJSON[i] = {"name": block.name, "index": block.index, "pos": pos, "var_names": block.var_names, "var_types": block.var_types, "var_values": block.var_vals, "population": block.pop}
 
 
-        saveJSON = {"layers": layersJSON, "environment_variables": envVarsJSON, "messages": msgsJSON, "function_blocks": funcBlocksJSON, "agent_blocks": agentBlocksJSON, "lines": self.lines}
+        saveJSON = {"config": self.config, "layers": layersJSON, "environment_variables": envVarsJSON, "messages": msgsJSON, "function_blocks": funcBlocksJSON, "agent_blocks": agentBlocksJSON, "lines": self.lines}
 
         with open(self.saveLoc, "w") as outfile:
             json.dump(saveJSON, outfile)
@@ -631,6 +635,7 @@ class Ui_MainWindow(object):
                 funcBlocksData = data["function_blocks"]
                 agentBlocksData = data["agent_blocks"]
                 linesData = data["lines"]
+                configData = data["config"]
             except:
                 print("load error")
                 return
@@ -650,6 +655,7 @@ class Ui_MainWindow(object):
         self.agentPositions = {}
         self.funcPositions = {}
 
+        self.config = configData
 
         self.lines = linesData
 
@@ -661,7 +667,7 @@ class Ui_MainWindow(object):
         
         for aBlock in agentBlocksData.values():
             pos = QtCore.QPoint(aBlock["pos"][0], aBlock["pos"][1])
-            self.createAgentBlock(aBlock["name"], aBlock["var_names"], aBlock["var_types"], aBlock["var_values"], pos, aBlock["index"])
+            self.createAgentBlock(aBlock["name"], aBlock["var_names"], aBlock["var_types"], aBlock["var_values"], pos, aBlock["index"], aBlock["population"])
 
         for key, val in layersData.items():
             self.addLayer()
@@ -689,15 +695,15 @@ class Ui_MainWindow(object):
         dialog.exec()
 
     def openConfig(self):
-        dialog = ConfigDialog(self, self.simName, self.steps, self.seed)
+        dialog = ConfigDialog(self, self.config["simName"], self.config["steps"], self.config["seed"])
         dialog.exec()
 
     def openAgentAdd(self):
         dialog = AgentDialog(self)
         dialog.exec()
     
-    def openAgentEdit(self,  index, name, var, varTypes, varVals):
-        dialog = AgentDialog(self, index, name, var, varTypes, varVals)
+    def openAgentEdit(self, index, name, var, varTypes, varVals, pop):
+        dialog = AgentDialog(self, index, name, var, varTypes, varVals, pop)
         dialog.exec()
 
     def getEnvProps(self):

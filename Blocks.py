@@ -13,7 +13,7 @@ class Block(QFrame):
         self.connecterPos = QtCore.QPoint(20, 50)
         
         self.drag_start_position = QtCore.QPoint(0, 0)
-        self.setGeometry(500, 500, 200, 250)
+        self.setGeometry(500, 500, 200, 240)
 
         self.setAutoFillBackground(True)
 
@@ -160,12 +160,14 @@ class FuncBlock(Block):
 
 class AgentBlock(Block):
 
-    def __init__(self, parent, name, index, var_names = None, var_types = None, var_vals = None):
+    def __init__(self, parent, name, index, var_names = None, var_types = None, var_vals = None, pop = None):
         super().__init__(parent, name, index)
         
         self.var_names = [] if var_names == None else var_names        
         self.var_types = [] if var_types == None else var_types
         self.var_vals = [] if var_vals == None else var_vals
+
+        self.pop = pop
 
         self.fillGrid()
 
@@ -187,7 +189,7 @@ class AgentBlock(Block):
         self.nameLbl.setMinimumSize(QtCore.QSize(0, 20))
         self.gridLayout.addWidget(self.nameLbl, 0, 0, 1, 0)
         pos = self.pos()
-        self.setGeometry(pos.x(), pos.y(), 150, 30 + 25*(len(self.var_names)+1))
+        self.setGeometry(pos.x(), pos.y(), 150, 60 + 30*len(self.var_names))
 
         for i, item in enumerate(self.var_names):
             newLbl = QtWidgets.QLabel(item, self)
@@ -233,11 +235,12 @@ class AgentBlock(Block):
         self.parent().agentMoved(self.index, newPos)
         return newPos
     
-    def updateVariables(self, name, varNames, varTypes, varVals):
+    def updateVariables(self, name, varNames, varTypes, varVals, pop):
         self.name = name
         self.var_names = varNames
         self.var_types = varTypes
         self.var_vals = varVals
+        self.pop = pop
 
         children = self.findChildren((QtWidgets.QLabel, QtWidgets.QPushButton))
         for child in children:
@@ -247,5 +250,5 @@ class AgentBlock(Block):
         self.fillGrid()
     
     def mouseDoubleClickEvent(self, e):
-        self.parent().openAgentEdit(self.index, self.name, self.var_names, self.var_types, self.var_vals)
+        self.parent().openAgentEdit(self.index, self.name, self.var_names, self.var_types, self.var_vals, self.pop)
 

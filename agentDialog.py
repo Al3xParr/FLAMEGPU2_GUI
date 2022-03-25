@@ -31,6 +31,13 @@ class Ui_agentDialog(object):
         self.newAgentName = QtWidgets.QLineEdit(agentDialog)
         self.newAgentName.setGeometry(QtCore.QRect(20, 20, 113, 20))
         self.newAgentName.setObjectName("newAgentName")
+
+        self.newAgentPop = QtWidgets.QLineEdit(agentDialog)
+        self.newAgentPop.setGeometry(QtCore.QRect(250, 20, 113, 20))
+        self.newAgentPop.setObjectName("newAgentPop")
+        self.newAgentPop.setPlaceholderText("Agent Population")
+
+
         self.agentAddVarBtn = QtWidgets.QPushButton(agentDialog)
         self.agentAddVarBtn.setGeometry(QtCore.QRect(20, 240, 360, 23))
         self.agentAddVarBtn.setObjectName("agentAddVarBtn")
@@ -71,6 +78,7 @@ class Ui_agentDialog(object):
 
     def createAgent(self, update: bool = False, index: int = None):
         name = self.newAgentName.text()
+        population = self.newAgentPop.text()
         agent_vars = []
         agent_var_types = []
         agent_var_vals = []
@@ -80,6 +88,10 @@ class Ui_agentDialog(object):
 
         if not structures.isValidName(self.newAgentName.text()):
             self.errorMsg("Agent name")
+            return
+        
+        if (not population.isnumeric()) or int(population) < 0:
+            self.errorMsg("Agent Population")
             return
         
         for i in range(self.vars):
@@ -105,9 +117,9 @@ class Ui_agentDialog(object):
             agent_var_vals.append(contents[c].text())
 
         if update:
-            self.parent().updateAgentBlock(index, name,agent_vars, agent_var_types, agent_var_vals)
+            self.parent().updateAgentBlock(index, name,agent_vars, agent_var_types, agent_var_vals, int(population))
         else:
-            self.parent().createAgentBlock(name, agent_vars, agent_var_types, agent_var_vals)
+            self.parent().createAgentBlock(name, agent_vars, agent_var_types, agent_var_vals, int(population))
         self.accept()
     
 
@@ -218,13 +230,13 @@ class Ui_agentDialog(object):
 
 
 class AgentDialog(QDialog, Ui_agentDialog):
-    def __init__(self, parent = None, index = None, name = None, vars = None, varTypes = None, varVals = None):
+    def __init__(self, parent = None, index = None, name = None, vars = None, varTypes = None, varVals = None, pop = None):
         super(AgentDialog, self).__init__(parent)
         self.setupUi(self)
         
         if index != None:
             self.setWindowTitle("Edit Agent")
-
+            self.newAgentPop.setText(str(pop))
             self.newAgentName.setText(name)
             for (a, b, c) in zip(vars, varTypes, varVals):
                 self.addVar(a, b, c)

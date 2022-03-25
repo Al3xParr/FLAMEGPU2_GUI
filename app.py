@@ -7,7 +7,7 @@ import sys
 import codeGen
 
 from mainWindow import Ui_MainWindow
-from Blocks import AgentBlock
+from Blocks import AgentBlock, FuncBlock
 
 
 
@@ -17,9 +17,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         super(BaseWindow, self).__init__(parent)
         
         self.setupUi(self)
-        self.simName = ""
-        self.steps = 0
-        self.seed = 0
+        self.config = {"simName": "", "steps": 0, "seed": None, "camera": (0, 0, 0)}
 
         self.agentIndex = None
         self.funcIndex = None
@@ -93,51 +91,140 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         self.update()
     
     def assignConfig(self, name, steps, seed):
-        self.simName = name
-        self.steps = steps
-        self.seed = seed
+        self.config["simName"] = name
+        self.config["steps"] = steps
+        self.config["seed"] = seed
     
 
     def buildScript(self):
-        #Name
-        #Seed
-        #env Props
-        #messages
-        #agents
-        #agent funcs
-        #agetn func ordered
-
         self.saveFile()
 
 
         script = codeGen.CodeGen()
 
-        script.write(["import pyflamegpu", "import sys, random, math", "import matplotlib.pyplot as plt"])
-        script.write(f"model = pyflamegpu.ModelDescription({self.simName})")
-        script.write(f"seed = {self.seed}")
-        script.write("env = model.Environment()")
+        script.write(["import pyflamegpu", "import sys, random, math", "import matplotlib.pyplot as plt", "", ""])
+        script.write(f"model = pyflamegpu.ModelDescription(\"{self.config['simName']}\")")
+        script.write(f"seed = {self.config['seed']}")
+        script.write("env = model.Environment()\n")
 
         envProps = self.getEnvProps()
 
         for prop in envProps.values():
-            script.write(f"env.newProperty{prop.type}(\"{prop.name}\", {prop.value})")
-        
+            script.write(f"env.newProperty{prop['type']}(\"{prop['name']}\", {prop['value']})")
+        script.write("")
 
         for msg in self.message_list:
             script.write(f"message = model.new{msg.msg_type}(\"{msg.name}\")")
             for var, var_type in zip(msg.vars, msg.var_types):
-                script.write("message.newVariable{var_type}(\"var\")")
-        
+                script.write(f"message.newVariable{var_type}(\"{var}\")")
+            script.write("")
+
+        script.write("")
+
         aBlocks = self.findChildren(AgentBlock)
 
-        for block in aBlocks:
-            script.write(f"agent = model.newAgent(\"{block.name}\"")
+        for i, block in enumerate(aBlocks):
+            script.write(f"agent{i+1} = model.newAgent(\"{block.name}\")")
             for var, var_type in zip(block.var_names, block.var_types):
-                script.write(f"agent.newVariable{var_type}(\"{var}\")")
-        
-        script.write("VISUALISATION = True")
+                script.write(f"agent{i+1}.newVariable{var_type}(\"{var}\")")
+            script.write("")
+        script.write("")
 
-        script.save(self.saveLoc[:-5])
+
+        script.write(["VISUALISATION = True", ""])
+
+        fBlocks = self.findChildren(FuncBlock)
+
+        for block in fBlocks:
+            script.write(f'{block.name} = r"""')
+            inputMsgType = "None"
+            outMsgType = "None"
+            for msg in self.message_list:
+                if block.inp_type == msg.name:
+                    inputMsgType = msg.msg_type
+                if block.out_type == msg.name:
+                    outMsgType = msg.msg_type
+            script.write(f"FLAMEGPU_AGENT_FUNCTION({block.name}, flamegpu::{inputMsgType}, flamegpu::{outMsgType}) {{", indent=1)
+            script.write(block.code, indent=-1)
+            script.write(['}', '"""', ''])
+
+
+        for agentNum, funcNums in self.lines.items():
+            for funcNum in funcNums:
+                func = [b for b in fBlocks if b.index == funcNum][0]
+                if func.out_type != "None":
+                    script.write(f'agent{agentNum}.newRTCFunction("{func.name}", {func.name}).setMessageOutput("{func.out_type}")')
+                if func.inp_type != "None":
+                    script.write(f'agent{agentNum}.newRTCFunction("{func.name}", {func.name}).setMessageInput("{func.inp_type}")')
+            script.write("")
+        
+        script.write("")
+
+        layersData = self.getLayersData()
+
+        for i, list in layersData.items():
+            script.write("layer = model.newLayer()")
+            for func in list:
+                funcIndex = [b.index for b in fBlocks if b.name == func][0]
+                agentsIndex = [a for a, f in self.lines.items() if funcIndex in f]
+                
+                for a in agentsIndex:
+                    name = [agent.index for agent in aBlocks if agent.index == int(a)][0]
+                    script.write(f'layer.addAgentFunction("{name}", "{func}")')
+            script.write("")
+        
+
+        #POPULATION TRACKER
+
+        script.write("cudaSimulation = pyflamegpu.CUDASimulation(model)")
+        script.write("")
+
+        script.write("if pyflamegpu.VISUALISATION:", indent=1)
+        script.write("visualisation = cudaSimulation.getVisualisation()")
+        #script.write(f"visualisation.setSimulationSpeed({self.config['speed']})")
+        script.write(f"visualisation.setSimulationSpeed({10})")
+        #script.write(f"visualisation.setInitialCameraLocation{self.config['camera']}")
+        script.write(f"visualisation.setInitialCameraLocation({43.0, 69.0, 83.0})")
+
+        for i, a in enumerate(aBlocks):
+
+            script.write(f'agent{i}Sim = visualisation.addAgent("{a.name}")')
+            script.write(f'agent{i}Sim.setModel(pyflamegpu.CUBE')
+        
+        script.write("visualisation.activate()", indent = -1)
+        script.write("")
+            
+        script.write("if seed is not None:", indent=1)
+        script.write([f"cudaSimulation.SimulationConfig().random_seed = {self.config['seed']}", 
+                        "cudaSimulation.applyConfig()"], indent=-1)
+        
+        script.write("")
+        script.write("if not cudaSimulation.SimulationConfig().input_file:", indent=1)
+        script.write("random.seed(cudaSimulation.SimulationConfig().random_seed)")
+
+
+        for a in aBlocks:
+            script.write(f'{a.name}Pop = pyflamegpu.AgentVector(model.Agent("{a.name}"), {a.pop})')
+            script.write("")
+            script.write(f"for i in range({a.pop}):", indent=1)
+            script.write(f"agent = {a.name}Pop[i]")
+
+            for varName, varType, varVal in zip(a.var_names, a.var_types, a.var_vals):
+                script.write(f'agent.setVariable{varType}(\"{varName}\", {varVal})')
+
+            script.write("", indent = -1)
+        
+            script.write(f"cudaSimulation.setPopulationData({a.name}Pop)")
+        script.write("", indent = -1)
+        
+        script.write(f"cudaSimulation.SimulationConfig().steps = {self.config['steps']}")
+
+        script.write("cudaSimulation.simulate()")
+        script.write("")
+        script.write("if pyflamegpu.VISUALISATION:", indent=1)
+        script.write("visualisation.join()")
+
+        script.save(self.saveLoc[:-5]+".py")
 
 
 
