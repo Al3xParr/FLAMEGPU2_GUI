@@ -117,9 +117,9 @@ class Ui_agentDialog(object):
             agent_var_vals.append(contents[c].text())
 
         if update:
-            self.parent().updateAgentBlock(index, name,agent_vars, agent_var_types, agent_var_vals, int(population))
+            self.parent().updateAgentBlock(index, name,agent_vars, agent_var_types, agent_var_vals, pop=int(population))
         else:
-            self.parent().createAgentBlock(name, agent_vars, agent_var_types, agent_var_vals, int(population))
+            self.parent().createAgentBlock(name, agent_vars, agent_var_types, agent_var_vals, pop=int(population))
         self.accept()
     
 
