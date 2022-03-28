@@ -1,4 +1,6 @@
+import random
 import numpy as np
+
 
 class Message():
     def __init__(self, name, msg_type, vars, var_types):
@@ -10,15 +12,31 @@ class Message():
 
 
 def isValidName(name: str):
+    name = name.replace("_", "")
     if name.isalnum() and not name[0].isdigit():
         return True
     else:
         return False
 
+
+
 def checkVar(val: str, varType: str):
 
-
     varType = varType.lower()
+
+    if any(c.isalpha() for c in val):
+        outputType = type(eval(val)).__name__ # float/int
+        if outputType == "float" and (varType == "float" or varType == "double"):
+            return True
+        elif outputType == "int":
+            if "-" in val and varType[0] == "u":
+                return False
+            else:
+                return True
+        else:
+            return False
+            
+
     
     if varType == "float":
         try:
