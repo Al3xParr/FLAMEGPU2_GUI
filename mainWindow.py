@@ -8,6 +8,7 @@
 
 from fileinput import filename
 from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import Qt
 from modClasses import DragLabel, Circle
 from msgDialog import MsgDialog
@@ -224,6 +225,15 @@ class Ui_MainWindow(object):
         self.actionLaunch.setText(_translate("MainWindow", "Launch"))
         self.actionAddAgent.setText(_translate("MainWindow", "Add Agent"))
         self.actionAddFunc.setText(_translate("MainWindow", "Add Function"))
+    
+    def closeEvent(self, e):
+        confirm = QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
+				QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+
+        if confirm == QMessageBox.StandardButton.Yes:
+            e.accept()
+        else:
+            e.ignore()
 
     def deleteLayer(self):
         widget = self.sender()
@@ -378,6 +388,7 @@ class Ui_MainWindow(object):
         self.newEnvName.setSizePolicy(sizePolicy)
         self.newEnvName.setInputMask("")
         self.newEnvName.setText("")
+        self.newEnvName.setMinimumSize(QtCore.QSize(90, 20))
         self.newEnvName.setPlaceholderText("Name")
         self.newEnvName.setObjectName(f"envName{self.envProps}")
         self.newEnvPropBox.addWidget(self.newEnvName)
@@ -680,12 +691,12 @@ class Ui_MainWindow(object):
 
     def errorMsg(self, string):
 
-        confirmBox = QtWidgets.QMessageBox()
+        confirmBox = QMessageBox()
         confirmBox.setText("Error")
         confirmBox.setInformativeText(f"An error has been detected in:\n {string}")
-        confirmBox.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Ok)
+        confirmBox.setStandardButtons(QMessageBox.StandardButton.Ok)
         result = confirmBox.exec()
-        if result == QtWidgets.QMessageBox.StandardButton.Yes:
+        if result == QMessageBox.StandardButton.Yes:
             self.setParent(None)
             return True
         return False
