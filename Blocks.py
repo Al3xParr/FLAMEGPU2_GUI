@@ -250,5 +250,6 @@ class AgentBlock(Block):
         self.fillGrid()
     
     def mouseDoubleClickEvent(self, e):
-        self.parent().openAgentEdit(self.index, self.name, self.var_names, self.var_types, self.var_vals, self.pop)
+        visData = self.parent().getVisData(self.index)
+        self.parent().openAgentEdit(self.index, self.name, self.var_names, self.var_types, self.var_vals, self.pop, visData)
 

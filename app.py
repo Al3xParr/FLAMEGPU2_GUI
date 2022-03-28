@@ -90,10 +90,11 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         self.funcIndex = None
         self.update()
     
-    def assignConfig(self, name, steps, seed):
+    def assignConfig(self, name, steps, seed, visData):
         self.config["simName"] = name
         self.config["steps"] = steps
         self.config["seed"] = seed
+        self.visData["system"] = visData
     
 
     def buildScript(self):

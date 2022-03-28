@@ -36,7 +36,7 @@ class Ui_configDialog(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.configScroll.sizePolicy().hasHeightForWidth())
         self.configScroll.setSizePolicy(sizePolicy)
-        self.configScroll.setMinimumSize(QtCore.QSize(260, 200))
+        self.configScroll.setMinimumSize(QtCore.QSize(260, 280))
         self.configScroll.setWidgetResizable(True)
         self.configScroll.setObjectName("configScroll")
         self.configScrollContianer = QtWidgets.QWidget()
@@ -67,6 +67,30 @@ class Ui_configDialog(object):
         self.seedEdit.setObjectName("seed")
         if self.seed is not None: self.seedEdit.setValue(self.seed)
         self.formLayout_2.setWidget(2, QtWidgets.QFormLayout.ItemRole.FieldRole, self.seedEdit)
+        self.visLbl = QtWidgets.QLabel(self.configScrollContianer)
+        self.visLbl.setText("Visualise Simulation?")
+        self.visBox = QtWidgets.QCheckBox(self.configScrollContianer)
+        
+        self.visBox.setObjectName("visBox")
+        self.formLayout_2.addRow(self.visLbl, self.visBox)
+        self.visSpeedLbl = QtWidgets.QLabel(self.configScrollContianer)
+        self.visSpeedLbl.setText("Simulation Speed:")
+        self.visSpeedBox = QtWidgets.QSpinBox(self.configScrollContianer)
+        self.visSpeedBox.setObjectName("visSpeedBox")
+        self.formLayout_2.addRow(self.visSpeedLbl, self.visSpeedBox)
+
+        self.visCameraLbl = QtWidgets.QLabel(self.configScrollContianer)
+        self.visCameraLbl.setText("Camera Position (x, y, z):")
+        self.visCameraEdit = QtWidgets.QLineEdit(self.configScrollContianer)
+        self.visCameraEdit.setObjectName("visCameraEdit")
+        self.formLayout_2.addRow(self.visCameraLbl, self.visCameraEdit)
+        
+        self.visCameraDirLbl = QtWidgets.QLabel(self.configScrollContianer)
+        self.visCameraDirLbl.setText("Camera Direction (x, y, z):")
+        self.visCameraDirEdit = QtWidgets.QLineEdit(self.configScrollContianer)
+        self.visCameraDirEdit.setObjectName("visCameraDirEdit")
+        self.formLayout_2.addRow(self.visCameraDirLbl, self.visCameraDirEdit)
+
         self.configScroll.setWidget(self.configScrollContianer)
 
         self.retranslateUi(configDialog)
@@ -88,13 +112,27 @@ class Ui_configDialog(object):
         name = self.nameEdit.text()
         steps = self.stepsEdit.value()
         seed = self.seedEdit.value()
-        self.parent().assignConfig(name, steps, seed)
+        visualise = self.visBox.isChecked()
+        visSpeed = self.visSpeedBox.value()
+        visCamPos = self.visCameraEdit.text()
+        visCamDir = self.visCameraDirEdit.text()
+        visData = {"show": visualise, "speed": visSpeed, "camPos": visCamPos, "camDir": visCamDir}
+        self.parent().assignConfig(name, steps, seed, visData)
+
+    def fillVisData(self):
+        if self.visData != None:
+            self.visBox.setChecked(self.visData["show"])
+            self.visSpeedBox.setValue(self.visData["speed"])
+            self.visCameraEdit.setText(self.visData["camPos"])
+            self.visCameraDirEdit.setText(self.visData["camDir"])
 
 class ConfigDialog(QDialog, Ui_configDialog):
-    def __init__(self, parent = None, name = "", steps = "", seed = None):
+    def __init__(self, parent = None, name = "", steps = "", seed = None, visData = None):
         super(ConfigDialog, self).__init__(parent)
         self.name = name 
         self.steps = steps
         self.seed = seed
+        self.visData = visData
         self.setupUi(self)
+        self.fillVisData()
 

@@ -38,6 +38,7 @@ class Ui_MainWindow(object):
         self.lines = {}
         self.agentPositions = {}
         self.funcPositions = {}
+        self.visData = {"system": None}
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -421,7 +422,7 @@ class Ui_MainWindow(object):
         children = self.envVertLayout.count()
         self.envVertLayout.insertLayout(children-1, self.newEnvPropBox)
 
-    def createAgentBlock(self, name, vars, var_types, var_vals, pos = None, index = None, pop = None):
+    def createAgentBlock(self, name, vars, var_types, var_vals, pos = None, index = None, pop = None, visData = None):
         if pos == None:
             pos = QtCore.QPoint(500, 500)
         
@@ -429,6 +430,9 @@ class Ui_MainWindow(object):
 
         if index == None:
             index = self.agentBlockNum
+        
+        if visData != None:
+            self.visData[index] = visData
 
         self.newAgentBlock = AgentBlock(self, name, index, vars, var_types, var_vals, pop)
         self.newAgentBlock.setObjectName(f"Agent{index}Block")
@@ -439,8 +443,9 @@ class Ui_MainWindow(object):
         self.newConenctor.show()
         self.agentPositions[index] = pos
     
-    def updateAgentBlock(self, index, name, vars, var_types, var_vals, pop):
+    def updateAgentBlock(self, index, name, vars, var_types, var_vals, pop, visData):
         block = self.findChild(AgentBlock, f"Agent{index}Block")
+        self.visData[index] = visData
         block.updateVariables(name, vars, var_types, var_vals, pop)
         
 
@@ -588,6 +593,12 @@ class Ui_MainWindow(object):
                 layersJSON[layerNum].append(item.widget().text())
         
         return layersJSON
+    
+    def getVisData(self, index):
+        if index in self.visData:
+            return self.visData[index]
+        else:
+            return None
 
 
     def saveFile(self):
@@ -622,7 +633,7 @@ class Ui_MainWindow(object):
             agentBlocksJSON[i] = {"name": block.name, "index": block.index, "pos": pos, "var_names": block.var_names, "var_types": block.var_types, "var_values": block.var_vals, "population": block.pop}
 
 
-        saveJSON = {"config": self.config, "layers": layersJSON, "environment_variables": envVarsJSON, "messages": msgsJSON, "function_blocks": funcBlocksJSON, "agent_blocks": agentBlocksJSON, "lines": self.lines}
+        saveJSON = {"config": self.config, "layers": layersJSON, "environment_variables": envVarsJSON, "messages": msgsJSON, "function_blocks": funcBlocksJSON, "agent_blocks": agentBlocksJSON, "lines": self.lines, "visual": self.visData}
 
         with open(self.saveLoc, "w") as outfile:
             json.dump(saveJSON, outfile)
@@ -647,6 +658,7 @@ class Ui_MainWindow(object):
                 agentBlocksData = data["agent_blocks"]
                 linesData = data["lines"]
                 configData = data["config"]
+                self.visData = data["visual"]
             except:
                 print("load error")
                 return
@@ -706,15 +718,15 @@ class Ui_MainWindow(object):
         dialog.exec()
 
     def openConfig(self):
-        dialog = ConfigDialog(self, self.config["simName"], self.config["steps"], self.config["seed"])
+        dialog = ConfigDialog(self, self.config["simName"], self.config["steps"], self.config["seed"], self.visData["system"])
         dialog.exec()
 
     def openAgentAdd(self):
         dialog = AgentDialog(self)
         dialog.exec()
     
-    def openAgentEdit(self, index, name, var, varTypes, varVals, pop):
-        dialog = AgentDialog(self, index, name, var, varTypes, varVals, pop)
+    def openAgentEdit(self, index, name, var, varTypes, varVals, pop, visData):
+        dialog = AgentDialog(self, index, name, var, varTypes, varVals, pop, visData)
         dialog.exec()
 
     def getEnvProps(self):

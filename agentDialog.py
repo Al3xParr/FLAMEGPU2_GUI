@@ -22,9 +22,9 @@ class Ui_agentDialog(object):
     def setupUi(self, agentDialog):
         agentDialog.setObjectName("agentDialog")
         agentDialog.resize(400, 330)
-        agentDialog.setFixedSize(400, 330)
+        agentDialog.setFixedSize(400, 450)
         self.buttonBox = QtWidgets.QDialogButtonBox(agentDialog)
-        self.buttonBox.setGeometry(QtCore.QRect(30, 290, 341, 32))
+        self.buttonBox.setGeometry(QtCore.QRect(30, 410, 340, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.Cancel|QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.buttonBox.setObjectName("buttonBox")
@@ -58,6 +58,47 @@ class Ui_agentDialog(object):
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.agentVertLayout.addItem(spacerItem)
         self.agentScroll.setWidget(self.agentScrollContainer)
+
+        self.visualiseWidget = QtWidgets.QWidget(agentDialog)
+        self.visualiseWidget.setGeometry(QtCore.QRect(20, 280, 360, 170))
+
+        self.visualiseLayout = QtWidgets.QFormLayout(agentDialog)
+        
+        self.visualiseLayout.setObjectName("visualiseLayout")
+        self.visConfirmLbl = QtWidgets.QLabel(agentDialog)
+        self.visConfirmLbl.setObjectName("visConfirmLbl")
+        self.visConfirmLbl.setText("Visualise Agent?")
+        self.visConfirmBox = QtWidgets.QCheckBox(agentDialog)
+        self.visConfirmBox.setObjectName("visConfirmBox")
+
+        self.visualiseLayout.addRow(self.visConfirmLbl, self.visConfirmBox)
+
+        self.visModelLbl = QtWidgets.QLabel(agentDialog)
+        self.visModelLbl.setObjectName("visModelLbl")
+        self.visModelLbl.setText("Agent Mesh")
+        self.visModelCombo = QtWidgets.QComboBox(agentDialog)
+        self.visModelCombo.setObjectName("visModelCombo")
+        self.visModelCombo.addItems(["None", "Sphere", "Isosphere", "Cube", "Teapot", "Stuntplane"])
+
+        self.visualiseLayout.addRow(self.visModelLbl, self.visModelCombo)
+
+        self.visColourLbl = QtWidgets.QLabel(agentDialog)
+        self.visColourLbl.setText("Mesh Colour (Hex)")
+        self.visColourEdit = QtWidgets.QLineEdit(agentDialog)
+        self.visColourEdit.setObjectName("visColourEdit")
+        self.visualiseLayout.addRow(self.visColourLbl, self.visColourEdit)
+
+        self.visScaleLbl = QtWidgets.QLabel(agentDialog)
+        self.visScaleLbl.setText("Agent Mesh Scale")
+        self.visScaleBox = QtWidgets.QSpinBox(agentDialog)
+        self.visScaleBox.setObjectName("visScaleBox")
+        self.visScaleBox.setSingleStep(0.001)
+        self.visScaleBox.setMaximum(2147483647)
+
+        self.visualiseLayout.addRow(self.visScaleLbl, self.visScaleBox)
+
+        self.visualiseWidget.setLayout(self.visualiseLayout)
+
 
         #Connecting buttons to functions
         self.agentAddVarBtn.clicked.connect(self.addVar)
@@ -115,11 +156,15 @@ class Ui_agentDialog(object):
             agent_var_types.append(contents[a].currentText())
             agent_vars.append(contents[b].text())
             agent_var_vals.append(contents[c].text())
+        
+        visData = {"show": False}
+        if self.visConfirmBox.isChecked():
+            visData = {"show": True, "model": self.visModelCombo.currentText(), "colour": self.visColourEdit.text(), "scale": self.visScaleBox.value()}
 
         if update:
-            self.parent().updateAgentBlock(index, name,agent_vars, agent_var_types, agent_var_vals, pop=int(population))
+            self.parent().updateAgentBlock(index, name,agent_vars, agent_var_types, agent_var_vals, pop=int(population), visData=visData)
         else:
-            self.parent().createAgentBlock(name, agent_vars, agent_var_types, agent_var_vals, pop=int(population))
+            self.parent().createAgentBlock(name, agent_vars, agent_var_types, agent_var_vals, pop=int(population), visData=visData,)
         self.accept()
     
 
@@ -230,7 +275,7 @@ class Ui_agentDialog(object):
 
 
 class AgentDialog(QDialog, Ui_agentDialog):
-    def __init__(self, parent = None, index = None, name = None, vars = None, varTypes = None, varVals = None, pop = None):
+    def __init__(self, parent = None, index = None, name = None, vars = None, varTypes = None, varVals = None, pop = None, visData=None):
         super(AgentDialog, self).__init__(parent)
         self.setupUi(self)
         
@@ -240,6 +285,13 @@ class AgentDialog(QDialog, Ui_agentDialog):
             self.newAgentName.setText(name)
             for (a, b, c) in zip(vars, varTypes, varVals):
                 self.addVar(a, b, c)
+
+            
+            if visData != None:
+                self.visConfirmBox.setChecked(visData["show"])
+                self.visModelCombo.setCurrentText(visData["model"])
+                self.visColourEdit.setText(visData["colour"])
+                self.visScaleBox.setValue(visData["scale"])
 
             self.buttonBox.accepted.disconnect()
             self.buttonBox.accepted.connect(lambda: self.createAgent(True, index))
