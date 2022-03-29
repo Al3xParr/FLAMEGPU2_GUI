@@ -23,14 +23,14 @@ class Ui_messageDialog(object):
     def setupUi(self, messageDialog):
         messageDialog.setObjectName("messageDialog")
         messageDialog.resize(550, 450)
-        messageDialog.setFixedSize(550, 450)
+        messageDialog.setFixedSize(550, 500)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(messageDialog.sizePolicy().hasHeightForWidth())
         messageDialog.setSizePolicy(sizePolicy)
         self.buttonBox = QtWidgets.QDialogButtonBox(messageDialog)
-        self.buttonBox.setGeometry(QtCore.QRect(310, 410, 211, 32))
+        self.buttonBox.setGeometry(QtCore.QRect(310, 460, 211, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.Cancel|QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.buttonBox.setObjectName("buttonBox")
@@ -41,7 +41,7 @@ class Ui_messageDialog(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.msgScroll.sizePolicy().hasHeightForWidth())
         self.msgScroll.setSizePolicy(sizePolicy)
-        self.msgScroll.setMinimumSize(QtCore.QSize(200, 450))
+        self.msgScroll.setMinimumSize(QtCore.QSize(200, 500))
         self.msgScroll.setWidgetResizable(True)
         self.msgScroll.setObjectName("msgScroll")
         self.msgScrollContainer = QtWidgets.QWidget()
@@ -101,11 +101,11 @@ class Ui_messageDialog(object):
         self.addVarBtn.setGeometry(QtCore.QRect(419, 310, 101, 23))
         self.addVarBtn.setObjectName("addVarBtn")
         self.addMsgBtn = QtWidgets.QPushButton(messageDialog)
-        self.addMsgBtn.setGeometry(QtCore.QRect(230, 350, 291, 23))
+        self.addMsgBtn.setGeometry(QtCore.QRect(230, 430, 291, 23))
         self.addMsgBtn.setObjectName("addMsgBtn")
 
         self.paramsContainer = QtWidgets.QWidget(messageDialog)
-        self.paramsContainer.setGeometry(QtCore.QRect(220, 340, 400, 30))
+        self.paramsContainer.setGeometry(QtCore.QRect(230, 340, 290, 80))
 
         self.addVarBtn.clicked.connect(self.addVar)
         self.addMsgBtn.clicked.connect(self.addMsg)
@@ -128,54 +128,103 @@ class Ui_messageDialog(object):
         self.addMsgBtn.setText(_translate("messageDialog", "Create Message"))
 
     def msgTypeChange(self):
+
+        #all spacial are floats
+        #all array unsigned  int
+        #bucket is int
+
+        msgText = self.newMsgType.currentText()
         self.removeImmutVars()
         self.removeParamInputs()
-        if self.newMsgType.currentText()[7:-2] == "Spatial":
+        if msgText[7:-2] == "Spatial":
             self.addImmutVar("UInt32", "x")
             self.addImmutVar("UInt32", "y")
-            if self.newMsgType.currentText()[-2] == "3":
+            if msgText[-2] == "3":
                 self.addImmutVar("UInt32", "z")
-            self.addRadiusInput()
-        elif self.newMsgType.currentText()[7:] == "Bucket":
-            self.addBoundsInput()
-        elif "Array" in self.newMsgType.currentText():
-            self.addRadiusInput()
+            self.addSpacialInput(int(msgText[-2]))
+        elif msgText[7:] == "Bucket":
+            self.addBucketInput()
+        elif "Array" in msgText:
+            if not msgText[-2].isnumeric():
+                self.addArrayInput(1)
+            else:
+                self.addArrayInput(int(msgText[-2]))
 
 
     def removeParamInputs(self):
         widgets = self.paramsContainer.findChildren((QtWidgets.QLabel, QtWidgets.QLineEdit), QtCore.QRegularExpression(f".*Param"))
         for w in widgets:
             w.setParent(None)
-        self.addMsgBtn.setGeometry(QtCore.QRect(230, 350, 291, 23))
+
+    def addArrayInput(self, dimensions):
+        dimensionLbl = QtWidgets.QLabel(self.paramsContainer)
+        dimensionLbl.setObjectName("dimensionLblParam")
+        dimensionLbl.setText("Set Dimension: ")
+        dimensionLbl.setGeometry(QtCore.QRect(0, 10, 80, 20))
+        dimensionLbl.show()
+
+        lineEditLength = (200-(dimensions*20))//dimensions
+        for i in range(dimensions):
+            dimensionEdit = QtWidgets.QLineEdit(self.paramsContainer)
+            dimensionEdit.setObjectName(f"dimension{i+1}EditParam")
+            dimensionEdit.setGeometry(QtCore.QRect(80+20*(i+1)+lineEditLength*i, 10, lineEditLength, 20))
+            dimensionEdit.setPlaceholderText(f"Dimension {i+1}")
+            dimensionEdit.show()
 
 
-    def addRadiusInput(self):
-        self.addMsgBtn.setGeometry(QtCore.QRect(230, 380, 291, 23))
+    def addSpacialInput(self, dimensions):
         radiusLbl = QtWidgets.QLabel(self.paramsContainer)
         radiusLbl.setObjectName("radiusLblParam")
         radiusLbl.setText("Set Interaction Radius: ")
-        radiusLbl.setGeometry(QtCore.QRect(10, 10, 120, 20))
+        radiusLbl.setGeometry(QtCore.QRect(0, 10, 120, 20))
         radiusLbl.show()
         radiusEdit = QtWidgets.QLineEdit(self.paramsContainer)
         radiusEdit.setObjectName("radiusEditParam")
-        radiusEdit.setGeometry(QtCore.QRect(160, 10, 130, 20))
+        radiusEdit.setGeometry(QtCore.QRect(150, 10, 130, 20))
         radiusEdit.show()
 
-    def addBoundsInput(self):
-        self.addMsgBtn.setGeometry(QtCore.QRect(230, 380, 291, 23))
+        print(dimensions)
+        placeholer = "x, y" if dimensions == 2 else "x, y, z"
+
+        minLbl = QtWidgets.QLabel(self.paramsContainer)
+        minLbl.setObjectName("minLblParam")
+        minLbl.setText("Set Min: ")
+        minLbl.setGeometry(QtCore.QRect(0, 50, 50, 20))
+        minLbl.show()
+        minEdit = QtWidgets.QLineEdit(self.paramsContainer)
+        minEdit.setObjectName("minEditParam")
+        minEdit.setPlaceholderText(placeholer)
+        minEdit.setGeometry(QtCore.QRect(60, 50, 75, 20))
+        minEdit.show()
+
+        maxLbl = QtWidgets.QLabel(self.paramsContainer)
+        maxLbl.setObjectName("maxLblParam")
+        maxLbl.setText("Set Max: ")
+        maxLbl.setGeometry(QtCore.QRect(145, 50, 50, 20))
+        maxLbl.show()
+        maxEdit = QtWidgets.QLineEdit(self.paramsContainer)
+        maxEdit.setObjectName("maxEditParam")
+        maxEdit.setPlaceholderText(placeholer)
+        maxEdit.setGeometry(QtCore.QRect(205, 50, 75, 20))
+        maxEdit.show()
+
+
+
+
+    def addBucketInput(self):
         boundsLbl = QtWidgets.QLabel(self.paramsContainer)
         boundsLbl.setObjectName("boundLblParam")
         boundsLbl.setText("Set Bounds: ")
-        boundsLbl.setGeometry(QtCore.QRect(10, 10, 100, 20))
+        boundsLbl.setGeometry(QtCore.QRect(0, 10, 100, 20))
         boundsLbl.show()
         minBoundEdit = QtWidgets.QLineEdit(self.paramsContainer)
         minBoundEdit.setObjectName("minBoundEditParam")
-        minBoundEdit.setGeometry(QtCore.QRect(110, 10, 80, 20))
+        minBoundEdit.setGeometry(QtCore.QRect(100, 10, 80, 20))
         minBoundEdit.setPlaceholderText("Minimum")
         minBoundEdit.show()
         maxBoundEdit = QtWidgets.QLineEdit(self.paramsContainer)
         maxBoundEdit.setObjectName("maxBoundEditParam")
-        maxBoundEdit.setGeometry(QtCore.QRect(210, 10, 80, 20))
+        maxBoundEdit.setGeometry(QtCore.QRect(200, 10, 80, 20))
         maxBoundEdit.setPlaceholderText("Maximum")
         maxBoundEdit.show()
 
