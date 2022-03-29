@@ -194,16 +194,7 @@ class Ui_agentDialog(object):
         self.newVarType.setSizePolicy(sizePolicy)
         self.newVarType.setMinimumSize(QtCore.QSize(0, 20))
         self.newVarType.setObjectName(f"varType{self.vars}")
-        self.newVarType.addItem("Float")
-        self.newVarType.addItem("Double")
-        self.newVarType.addItem("Int8")
-        self.newVarType.addItem("UInt8")
-        self.newVarType.addItem("Int16")
-        self.newVarType.addItem("UInt16")
-        self.newVarType.addItem("Int32")
-        self.newVarType.addItem("UInt32")
-        self.newVarType.addItem("Int64")
-        self.newVarType.addItem("UInt64")
+        self.newVarType.addItems(["Float", "Double", "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64"])
         self.newVarBox.addWidget(self.newVarType)
         self.newVarName = QtWidgets.QLineEdit(self.agentScrollContainer)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
@@ -295,8 +286,3 @@ class AgentDialog(QDialog, Ui_agentDialog):
 
             self.buttonBox.accepted.disconnect()
             self.buttonBox.accepted.connect(lambda: self.createAgent(True, index))
-        
-
-        
-
-

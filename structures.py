@@ -3,11 +3,12 @@ import numpy as np
 
 
 class Message():
-    def __init__(self, name, msg_type, vars, var_types):
+    def __init__(self, name, msg_type, vars, var_types, params=None):
         self.name = name
         self.msg_type = msg_type
         self.vars = vars
         self.var_types = var_types
+        self.params = params if params is not None else {}
 
 
 
@@ -114,5 +115,3 @@ def checkVar(val: str, varType: str):
 
     else:
         return False
-
-        

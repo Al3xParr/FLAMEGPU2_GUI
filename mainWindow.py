@@ -39,6 +39,7 @@ class Ui_MainWindow(object):
         self.agentPositions = {}
         self.funcPositions = {}
         self.visData = {"system": None}
+        self.linkedFuncList = []
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -49,12 +50,12 @@ class Ui_MainWindow(object):
         
         self.envPropFrame = QtWidgets.QFrame(self.centralwidget)
         self.envPropFrame.setGeometry(QtCore.QRect(0, 0, 270, 700))
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.envPropFrame.sizePolicy().hasHeightForWidth())
+        sizePolicy.setVerticalStretch(1)
+        #sizePolicy.setHeightForWidth(self.envPropFrame.sizePolicy().hasHeightForWidth())
         self.envPropFrame.setSizePolicy(sizePolicy)
-        self.envPropFrame.setMinimumSize(QtCore.QSize(270, 720))
+        #self.envPropFrame.setMinimumSize(QtCore.QSize(270, 720))
         self.envPropFrame.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.envPropFrame.setFrameShadow(QtWidgets.QFrame.Shadow.Plain)
         self.envPropFrame.setLineWidth(1)
@@ -71,7 +72,7 @@ class Ui_MainWindow(object):
         self.envPropScroll.setGeometry(QtCore.QRect(0, 40, 270, 600))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setVerticalStretch(2)
         sizePolicy.setHeightForWidth(self.envPropScroll.sizePolicy().hasHeightForWidth())
         self.envPropScroll.setSizePolicy(sizePolicy)
         self.envPropScroll.setMinimumSize(QtCore.QSize(250, 600))
@@ -100,7 +101,7 @@ class Ui_MainWindow(object):
         self.addEnvPropBtn.setMinimumSize(QtCore.QSize(230, 23))
         self.addEnvPropBtn.setObjectName("addEnvPropBtn")
         self.flowFrame = QtWidgets.QFrame(self.centralwidget)
-        self.flowFrame.setGeometry(QtCore.QRect(1110, 0, 170, 311))
+        self.flowFrame.setGeometry(QtCore.QRect(self.frameSize().width()-170, 0, 170, 311))
         self.flowFrame.setLayoutDirection(QtCore.Qt.LayoutDirection.LeftToRight)
         self.flowFrame.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.flowFrame.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
@@ -263,7 +264,6 @@ class Ui_MainWindow(object):
         if index == None:
             index = self.funcBlockNum
 
-
         self.newFuncBlock = FuncBlock(self, name, index, self.message_list, inp, out, code)
         self.newFuncBlock.setObjectName(f"Function{index}Block")
         self.newFuncBlock.move(pos)
@@ -283,6 +283,12 @@ class Ui_MainWindow(object):
         if self.drawLine:
             self.drawCurrentLine(paint)
         paint.end()
+
+    def resizeEvent(self, e):
+        self.flowFrame.setGeometry(QtCore.QRect(self.frameSize().width()-170, 0, 170, 311))
+        self.envPropFrame.setGeometry(QtCore.QRect(0, 0, 270, self.frameSize().height()-20))
+        self.envPropScroll.setGeometry(QtCore.QRect(0, 40, 270, self.frameSize().height()-140))
+        self.addEnvPropBtn.setGeometry(QtCore.QRect(10, self.frameSize().height()-90, 250, 23))
 
     def drawExistingLines(self, paint):
         pen = QtGui.QPen(Qt.GlobalColor.black, 2, Qt.PenStyle.SolidLine)
@@ -370,16 +376,7 @@ class Ui_MainWindow(object):
         self.newEnvType.setSizePolicy(sizePolicy)
         self.newEnvType.setMinimumSize(QtCore.QSize(64, 20))
         self.newEnvType.setObjectName(f"envType{self.envProps}")
-        self.newEnvType.addItem("Float")
-        self.newEnvType.addItem("Double")
-        self.newEnvType.addItem("Int8")
-        self.newEnvType.addItem("UInt8")
-        self.newEnvType.addItem("Int16")
-        self.newEnvType.addItem("UInt16")
-        self.newEnvType.addItem("Int32")
-        self.newEnvType.addItem("UInt32")
-        self.newEnvType.addItem("Int64")
-        self.newEnvType.addItem("UInt64")
+        self.newEnvType.addItems(["Float", "Double", "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64"])
         self.newEnvPropBox.addWidget(self.newEnvType)
         self.newEnvName = QtWidgets.QLineEdit(self.envPropScrollContainer)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
@@ -615,7 +612,7 @@ class Ui_MainWindow(object):
 
         msgsJSON = {}
         for index, msg in enumerate(self.message_list):
-            msgsJSON[index] = {"name": msg.name, "type": msg.msg_type, "vars": msg.vars, "var_types": msg.var_types}
+            msgsJSON[index] = {"name": msg.name, "type": msg.msg_type, "vars": msg.vars, "var_types": msg.var_types, "params": self.params}
         
 
         funcBlockList = self.findChildren(FuncBlock)
@@ -683,7 +680,7 @@ class Ui_MainWindow(object):
         self.lines = linesData
 
         for msg in messagesData.values():
-            self.message_list.append(Message(msg["name"], msg["type"], msg["vars"], msg["var_types"]))
+            self.message_list.append(Message(msg["name"], msg["type"], msg["vars"], msg["var_types"], msg["params"]))
 
         for var in envVarsData.values():
             self.addEnvProp(var["name"], var["type"], var["value"])
