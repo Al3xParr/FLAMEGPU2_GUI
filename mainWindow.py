@@ -39,7 +39,7 @@ class Ui_MainWindow(object):
         self.agentPositions = {}
         self.funcPositions = {}
         self.visData = {"system": None}
-        self.linkedFuncList = []
+        self.linkedFuncList = {}
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -272,7 +272,7 @@ class Ui_MainWindow(object):
         self.newConenctor.setObjectName(f"Function{index}Circle")
         self.newConenctor.show()
         self.funcPositions[index] = pos
-        self.addFunc(name)
+
 
     def paintEvent(self, e):
         paint = QtGui.QPainter()
@@ -346,7 +346,7 @@ class Ui_MainWindow(object):
         children = self.flowVertLayout.count()
         self.flowVertLayout.insertLayout(children-1, self.newLayerBox)
 
-    #Will be deleted, just for testing
+
     def addFunc(self, name):
         self.functions += 1
 
@@ -674,6 +674,7 @@ class Ui_MainWindow(object):
         self.lines = {}
         self.agentPositions = {}
         self.funcPositions = {}
+        self.linkedFuncList = {}
 
         self.config = configData
 
@@ -689,13 +690,31 @@ class Ui_MainWindow(object):
             pos = QtCore.QPoint(aBlock["pos"][0], aBlock["pos"][1])
             self.createAgentBlock(aBlock["name"], aBlock["var_names"], aBlock["var_types"], aBlock["var_values"], pos, aBlock["index"], aBlock["population"])
 
+        displayedFuncs = []
         for key, val in layersData.items():
             self.addLayer()
             for func in val:
                 for fBlock in funcBlocksData.values():
-                    if fBlock["name"] == func:
+                    if fBlock["name"] == func.split("(")[0] and fBlock["name"] not in displayedFuncs:
+                        displayedFuncs.append(fBlock["name"])
                         pos = QtCore.QPoint(fBlock["pos"][0], fBlock["pos"][1])
                         self.createFunctionBlock(fBlock["name"], fBlock["inp_type"], fBlock["out_type"], pos, fBlock["index"], fBlock["code"])
+                self.addFunc(func)
+        
+        agentList = self.findChildren(AgentBlock)
+        funcList = self.findChildren(FuncBlock)
+
+        for key, val in self.lines.items():
+            key = int(key)
+            
+            agentName = [a.name for a in agentList if a.index == key][0]
+            self.linkedFuncList[agentName] = []
+            for index in val:
+                index = int(index)
+                funcName = [f.name for f in funcList if f.index == index][0]
+                self.linkedFuncList[agentName].append(funcName)
+
+
 
 
     def errorMsg(self, string):

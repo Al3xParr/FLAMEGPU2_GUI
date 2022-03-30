@@ -83,6 +83,36 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
                     self.lines[self.agentIndex].append(self.funcIndex)
             else:
                 self.lines[self.agentIndex] = [self.funcIndex]
+            
+            #get func name from index
+            funcName = [f.name for f in self.findChildren(FuncBlock) if f.index == self.funcIndex][0]
+            agentName = [a.name for a in self.findChildren(AgentBlock) if a.index == self.agentIndex][0]
+
+            currentFuncsLists = self.linkedFuncList.values()
+            alreadyPresent = False
+            for l in currentFuncsLists:
+                if funcName in l:
+                    alreadyPresent = True
+                    break
+            if alreadyPresent:
+                funcs = self.flowScrollContents.findChildren(QtWidgets.QLabel,  QtCore.QRegularExpression("function.*"))
+                for f in funcs:
+                    if f.text() == funcName:
+                        for k, v in self.linkedFuncList.items():
+                            if funcName in v:
+                                f.setText(funcName + f"({k})")
+                    
+               #funcCards in ctrlFlow where funcName == funcName:
+                
+                self.addFunc(funcName+f"({agentName})")
+            else:
+                self.addFunc(funcName)
+
+            if agentName in self.linkedFuncList.keys():
+                self.linkedFuncList[agentName].append(funcName)
+            else:
+                self.linkedFuncList[agentName] = [funcName]
+
         self.lineStart = QtCore.QPoint()
         self.lineEnd = QtCore.QPoint()
         self.drawLine = False

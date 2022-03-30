@@ -130,7 +130,10 @@ class FuncBlock(Block):
     
     def changeName(self):
         self.name = self.nameLbl.text()
-        self.parent().findChild(QtWidgets.QLabel, f"function{self.index}").setText(self.name)
+        flowLblList = self.parent().findChildren(QtWidgets.QLabel, f"function{self.index}")
+        flowLbl = [lbl for lbl in flowLblList if lbl.text() == self.name]
+        if len(flowLbl) > 0:
+            flowLbl[0].setText(self.name)
     
     def inpChange(self):
         self.inp_type = self.inpCombo.currentText()

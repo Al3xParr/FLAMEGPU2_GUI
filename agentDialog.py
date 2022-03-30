@@ -60,7 +60,7 @@ class Ui_agentDialog(object):
         self.agentScroll.setWidget(self.agentScrollContainer)
 
         self.visualiseWidget = QtWidgets.QWidget(agentDialog)
-        self.visualiseWidget.setGeometry(QtCore.QRect(20, 280, 360, 170))
+        self.visualiseWidget.setGeometry(QtCore.QRect(20, 280, 360, 130))
 
         self.visualiseLayout = QtWidgets.QFormLayout(agentDialog)
         
@@ -123,7 +123,7 @@ class Ui_agentDialog(object):
         agent_vars = []
         agent_var_types = []
         agent_var_vals = []
-
+        
         contents = self.agentScrollContainer.children()
         contents_names = [c.objectName() for c in contents]
 
@@ -164,7 +164,7 @@ class Ui_agentDialog(object):
         if update:
             self.parent().updateAgentBlock(index, name,agent_vars, agent_var_types, agent_var_vals, pop=int(population), visData=visData)
         else:
-            self.parent().createAgentBlock(name, agent_vars, agent_var_types, agent_var_vals, pop=int(population), visData=visData,)
+            self.parent().createAgentBlock(name, agent_vars, agent_var_types, agent_var_vals, pop=int(population), visData=visData)
         self.accept()
     
 
@@ -283,6 +283,6 @@ class AgentDialog(QDialog, Ui_agentDialog):
                 self.visModelCombo.setCurrentText(visData["model"])
                 self.visColourEdit.setText(visData["colour"])
                 self.visScaleBox.setValue(visData["scale"])
-
+            
             self.buttonBox.accepted.disconnect()
             self.buttonBox.accepted.connect(lambda: self.createAgent(True, index))
