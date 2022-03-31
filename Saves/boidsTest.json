@@ -1,0 +1,137 @@
+{
+    "config": {
+        "simName": "boidsModel",
+        "steps": 10000,
+        "seed": 342,
+        "camera": [
+            0,
+            0,
+            0
+        ]
+    },
+    "layers": {
+        "1": [
+            "outputdata"
+        ],
+        "2": [
+            "inputdata"
+        ]
+    },
+    "environment_variables": {},
+    "messages": {
+        "0": {
+            "name": "location",
+            "type": "MessageSpatial3D",
+            "vars": [
+                "x",
+                "y",
+                "z",
+                "id",
+                "fx",
+                "fy",
+                "fz"
+            ],
+            "var_types": [
+                "UInt32",
+                "UInt32",
+                "UInt32",
+                "ID",
+                "Float",
+                "Float",
+                "Float"
+            ],
+            "params": {
+                "radius": 0.1,
+                "min": [
+                    -0.5,
+                    -0.5,
+                    -0.5
+                ],
+                "max": [
+                    0.5,
+                    0.5,
+                    0.5
+                ]
+            }
+        }
+    },
+    "function_blocks": {
+        "0": {
+            "name": "inputdata",
+            "index": 1,
+            "pos": [
+                701,
+                18
+            ],
+            "inp_type": "location",
+            "out_type": "",
+            "code": ""
+        },
+        "1": {
+            "name": "outputdata",
+            "index": 2,
+            "pos": [
+                706,
+                321
+            ],
+            "inp_type": "",
+            "out_type": "location",
+            "code": ""
+        }
+    },
+    "agent_blocks": {
+        "0": {
+            "name": "Boid",
+            "index": 1,
+            "pos": [
+                366,
+                129
+            ],
+            "var_names": [
+                "x",
+                "y",
+                "z",
+                "fx",
+                "fy",
+                "fz"
+            ],
+            "var_types": [
+                "Float",
+                "Float",
+                "Float",
+                "Float",
+                "Float",
+                "Float"
+            ],
+            "var_values": [
+                "random.uniform(-0.5, 0.5)",
+                "random.uniform(-0.5, 0.5)",
+                "random.uniform(-0.5, 0.5)",
+                "random.uniform(-1, 1)",
+                "random.uniform(-1, 1)",
+                "random.uniform(-1, 1)"
+            ],
+            "population": 512
+        }
+    },
+    "lines": {
+        "1": [
+            1,
+            2
+        ]
+    },
+    "visual": {
+        "system": {
+            "show": true,
+            "speed": 20,
+            "camPos": "(2, 2, 2)",
+            "camDir": "(0, 0, 0)"
+        },
+        "Boid": {
+            "show": true,
+            "model": "Stuntplane",
+            "colour": "FF1808",
+            "scale": 1
+        }
+    }
+}

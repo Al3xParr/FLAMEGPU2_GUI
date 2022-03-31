@@ -78,6 +78,7 @@ class Ui_MainWindow(object):
         self.envPropScroll.setMinimumSize(QtCore.QSize(250, 600))
         self.envPropScroll.setWidgetResizable(True)
         self.envPropScroll.setObjectName("envPropScroll")
+        self.envPropScroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.envPropScrollContainer = QtWidgets.QWidget()
         self.envPropScrollContainer.setGeometry(QtCore.QRect(0, 0, 268, 598))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
@@ -117,6 +118,7 @@ class Ui_MainWindow(object):
         self.flowScroll.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.flowScroll.setWidgetResizable(True)
         self.flowScroll.setObjectName("flowScroll")
+        self.flowScroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.flowScrollContents = QtWidgets.QWidget()
         self.flowScrollContents.setGeometry(QtCore.QRect(0, 0, 147, 228))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Expanding)
@@ -429,7 +431,7 @@ class Ui_MainWindow(object):
             index = self.agentBlockNum
         
         if visData != None:
-            self.visData[index] = visData
+            self.visData[name] = visData
 
         self.newAgentBlock = AgentBlock(self, name, index, vars, var_types, var_vals, pop)
         self.newAgentBlock.setObjectName(f"Agent{index}Block")
@@ -442,7 +444,7 @@ class Ui_MainWindow(object):
     
     def updateAgentBlock(self, index, name, vars, var_types, var_vals, pop, visData):
         block = self.findChild(AgentBlock, f"Agent{index}Block")
-        self.visData[index] = visData
+        self.visData[name] = visData
         block.updateVariables(name, vars, var_types, var_vals, pop)
         
 
@@ -501,25 +503,26 @@ class Ui_MainWindow(object):
         if label.text()[:5] == "Layer":
             return False
 
-        for num in range(self.flowVertLayout.count()):
+        for num in range(self.flowVertLayout.count()-1):
             g = self.flowVertLayout.itemAt(num).geometry()
 
             if pos.y() < g.y() + g.size().width() // 2:
                 self.flowVertLayout.insertWidget(max(num, 1), label)
                 return True
 
-        self.flowVertLayout.insertWidget(self.flowVertLayout.count()-2, label)
+        index = self.flowVertLayout.count() - 2
+        self.flowVertLayout.insertWidget(index , label)
         return True
     
-    def createMessage(self, name, msg_type, vars, var_types):
-        new_msg = Message(name, msg_type, vars, var_types)
+    def createMessage(self, name, msg_type, vars, var_types, params):
+        new_msg = Message(name, msg_type, vars, var_types, params)
         self.message_list.append(new_msg)
+        print(new_msg.params)
         
         combo_list = self.findChildren(QtWidgets.QComboBox, QtCore.QRegularExpression("^messageCombo.*"))
         for combo in combo_list:
             combo.addItem(name)
-        
-        print(self.message_list)
+
         return new_msg
     
     def messageDeleted(self, name):
@@ -612,7 +615,7 @@ class Ui_MainWindow(object):
 
         msgsJSON = {}
         for index, msg in enumerate(self.message_list):
-            msgsJSON[index] = {"name": msg.name, "type": msg.msg_type, "vars": msg.vars, "var_types": msg.var_types, "params": self.params}
+            msgsJSON[index] = {"name": msg.name, "type": msg.msg_type, "vars": msg.vars, "var_types": msg.var_types, "params": msg.params}
         
 
         funcBlockList = self.findChildren(FuncBlock)
@@ -688,7 +691,7 @@ class Ui_MainWindow(object):
         
         for aBlock in agentBlocksData.values():
             pos = QtCore.QPoint(aBlock["pos"][0], aBlock["pos"][1])
-            self.createAgentBlock(aBlock["name"], aBlock["var_names"], aBlock["var_types"], aBlock["var_values"], pos, aBlock["index"], aBlock["population"])
+            self.createAgentBlock(aBlock["name"], aBlock["var_names"], aBlock["var_types"], aBlock["var_values"], pos, aBlock["index"], aBlock["population"], self.visData[aBlock["name"]])
 
         displayedFuncs = []
         for key, val in layersData.items():

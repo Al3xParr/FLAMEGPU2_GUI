@@ -42,7 +42,6 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         parent = widget.parent()
 
 
-
         if widget.objectName()[:5] == "Agent":
             newPos = widget.dragged(pos.toPoint())
             circleName = widget.objectName()[:-5] + "Circle"
@@ -67,8 +66,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
                 self.lineStart = self.agentPositions[self.agentIndex] + QtCore.QPoint(150, 40)
                 self.lineEnd = pos.toPoint()
                 self.update()
-        elif e.buttons() == Qt.MouseButton.RightButton:
-            print(e.source().objectName())
+
 
     def mouseMoveEvent(self, e):
         if e.buttons() == Qt.MouseButton.LeftButton:
@@ -101,9 +99,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
                         for k, v in self.linkedFuncList.items():
                             if funcName in v:
                                 f.setText(funcName + f"({k})")
-                    
-               #funcCards in ctrlFlow where funcName == funcName:
-                
+
                 self.addFunc(funcName+f"({agentName})")
             else:
                 self.addFunc(funcName)
@@ -146,6 +142,22 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
 
         for msg in self.message_list:
             script.write(f"message = model.new{msg.msg_type}(\"{msg.name}\")")
+
+            if msg.msg_type[:-2] == "MessageSpatial":
+                script.write(f"message.setRadius({msg.params['radius']})")
+                mins = tuple(msg.params["min"])
+                script.write(f"message.setMin{mins}")
+                maxs = tuple(msg.params["max"])
+                script.write(f"message.setMax{maxs}")
+            elif msg.msg_type == "MessageArray":
+                length = int(msg.params["dimensions"])
+                script.write(f"message.setLength({length})")
+            elif msg.msg_type == "MessageArray2D" or msg.msg_type == "MessageArray3D":
+                dimen = tuple(msg.params["dimensions"])
+                script.write(f"message.setDimensions{dimen}")
+            elif msg.msg_type == "MessageBucket":
+                script.write(f"message.setBounds({msg.params['min']}, {msg.params['max']})")
+
             for var, var_type in zip(msg.vars, msg.var_types):
                 script.write(f"message.newVariable{var_type}(\"{var}\")")
             script.write("")
@@ -212,10 +224,8 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
 
         script.write("if pyflamegpu.VISUALISATION:", indent=1)
         script.write("visualisation = cudaSimulation.getVisualisation()")
-        #script.write(f"visualisation.setSimulationSpeed({self.config['speed']})")
-        script.write(f"visualisation.setSimulationSpeed({10})")
-        #script.write(f"visualisation.setInitialCameraLocation{self.config['camera']}")
-        script.write(f"visualisation.setInitialCameraLocation({43.0, 69.0, 83.0})")
+        script.write(f"visualisation.setSimulationSpeed({self.visData['system']['speed']})")
+        script.write(f"visualisation.setInitialCameraLocation{self.visData['system']['camera']}")
 
         for i, a in enumerate(aBlocks):
 

@@ -1,0 +1,51 @@
+{
+    "config": {
+        "simName": "",
+        "steps": 0,
+        "seed": null,
+        "camera": [
+            0,
+            0,
+            0
+        ]
+    },
+    "layers": {
+        "1": []
+    },
+    "environment_variables": {},
+    "messages": {
+        "0": {
+            "name": "sdgf",
+            "type": "MessageSpatial3D",
+            "vars": [
+                "x",
+                "y",
+                "z"
+            ],
+            "var_types": [
+                "UInt32",
+                "UInt32",
+                "UInt32"
+            ],
+            "params": {
+                "radius": 43.0,
+                "min": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "max": [
+                    4.0,
+                    4.0,
+                    4.0
+                ]
+            }
+        }
+    },
+    "function_blocks": {},
+    "agent_blocks": {},
+    "lines": {},
+    "visual": {
+        "system": null
+    }
+}

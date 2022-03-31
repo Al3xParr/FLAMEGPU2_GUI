@@ -1,6 +1,6 @@
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import Qt, QMimeData
-from PyQt6.QtGui import QDrag, QPixmap, QPainter, QPen, QBrush
+from PyQt6.QtGui import QDrag, QCursor
 from PyQt6.QtWidgets import QFrame, QWidget
 
 
@@ -60,9 +60,17 @@ class FuncBlock(Block):
         self.msg_list = messages
         self.code = code
 
+        self.atSide = False
+        self.atBottom = False
+        self.moveBottom = False
+        self.moveSide = False
+
+
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
+
+        self.setMouseTracking(True)
         
 
         self.nameLbl = QtWidgets.QLineEdit(self.name, self)
@@ -127,6 +135,7 @@ class FuncBlock(Block):
             self.outCombo.setCurrentIndex(i)
 
         self.nameLbl.textChanged.connect(self.changeName)
+        self.codeTxtEdit.textChanged.connect(self.changeCode)
     
     def changeName(self):
         self.name = self.nameLbl.text()
@@ -134,7 +143,10 @@ class FuncBlock(Block):
         flowLbl = [lbl for lbl in flowLblList if lbl.text() == self.name]
         if len(flowLbl) > 0:
             flowLbl[0].setText(self.name)
-    
+
+    def changeCode(self):
+        self.code = self.codeTxtEdit.toPlainText()
+
     def inpChange(self):
         self.inp_type = self.inpCombo.currentText()
     
@@ -156,10 +168,75 @@ class FuncBlock(Block):
             label.setParent(None)
             circle.setParent(None)
             parent.funcRemoved(self.index)
-
     
+    def posToSize(self, pos):
+        width = pos.x()
+        height = pos.y()
+        return QtCore.QSize(width, height)
+
+    def mouseMoveEvent(self, e):
+        
+        if self.moveBottom and self.moveSide:
+            difference = e.pos() - self.drag_start_position
+            self.resize(self.size() + self.posToSize(difference))
+            self.drag_start_position = e.pos()
+            return 
+        elif self.moveBottom:
+            difference = QtCore.QPoint(0, e.pos().y() - self.drag_start_position.y())
+            self.resize(self.size() + self.posToSize(difference))
+            self.drag_start_position = e.pos()
+            return
+        elif self.moveSide:
+            difference =  QtCore.QPoint(e.pos().x() - self.drag_start_position.x(), 0)
+            self.resize(self.size() + self.posToSize(difference))
+            self.drag_start_position = e.pos()
+            return
+        else:
+            ePos = e.pos()
+            sPos = QtCore.QPoint(self.width(), self.height())
+
+            self.atSide = False
+            self.atBottom = False
+
+            if ePos.x() > sPos.x() - 10 and ePos.x() < sPos.x() + 10:
+                self.atSide = True
+            if ePos.y() > sPos.y() - 10 and ePos.y() < sPos.y() + 10:
+                self.atBottom = True
+            
+            cursor = QCursor()
+
+            if self.atBottom and self.atSide:
+                cursor.setShape(Qt.CursorShape.SizeFDiagCursor)
+                self.setCursor(cursor)
+            elif self.atBottom:
+                cursor.setShape(Qt.CursorShape.SizeVerCursor)
+                self.setCursor(cursor)
+            elif self.atSide:
+                cursor.setShape(Qt.CursorShape.SizeHorCursor)
+                self.setCursor(cursor)
+            else:
+                self.atSide = False
+                self.atBottom = False
+                return super().mouseMoveEvent(e)
+
+    def mousePressEvent(self, e):
+        if e.buttons() == Qt.MouseButton.LeftButton:
+            self.drag_start_position = e.position().toPoint()
+            
+            self.moveBottom = True if self.atBottom else False
+            self.moveSide = True if self.atSide else False
+        
+    def mouseReleaseEvent(self, e):
+        self.moveBottom = False
+        self.moveSide = False
+        return super().mouseReleaseEvent(e)
+                
         
 
+
+        
+
+    
 
 class AgentBlock(Block):
 
@@ -253,6 +330,14 @@ class AgentBlock(Block):
         self.fillGrid()
     
     def mouseDoubleClickEvent(self, e):
-        visData = self.parent().getVisData(self.index)
+        visData = self.parent().getVisData(self.name)
         self.parent().openAgentEdit(self.index, self.name, self.var_names, self.var_types, self.var_vals, self.pop, visData)
 
+
+class HostFuncBlock(Block):
+    def __init__(self, parent, name, index, messages, code = ""):
+        super().__init__(parent, name, index)
+        self.inp_type = inp_type
+        self.out_type = out_type
+        self.msg_list = messages
+        self.code = code

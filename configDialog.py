@@ -77,17 +77,20 @@ class Ui_configDialog(object):
         self.visSpeedLbl.setText("Simulation Speed:")
         self.visSpeedBox = QtWidgets.QSpinBox(self.configScrollContianer)
         self.visSpeedBox.setObjectName("visSpeedBox")
+        self.visSpeedBox.setMaximum(2147483647)
         self.formLayout_2.addRow(self.visSpeedLbl, self.visSpeedBox)
 
         self.visCameraLbl = QtWidgets.QLabel(self.configScrollContianer)
-        self.visCameraLbl.setText("Camera Position (x, y, z):")
+        self.visCameraLbl.setText("Camera Position:")
         self.visCameraEdit = QtWidgets.QLineEdit(self.configScrollContianer)
         self.visCameraEdit.setObjectName("visCameraEdit")
+        self.visCameraEdit.setPlaceholderText("(x, y, z)")
         self.formLayout_2.addRow(self.visCameraLbl, self.visCameraEdit)
         
         self.visCameraDirLbl = QtWidgets.QLabel(self.configScrollContianer)
-        self.visCameraDirLbl.setText("Camera Direction (x, y, z):")
+        self.visCameraDirLbl.setText("Camera Direction:")
         self.visCameraDirEdit = QtWidgets.QLineEdit(self.configScrollContianer)
+        self.visCameraDirEdit.setPlaceholderText("(x, y, z)")
         self.visCameraDirEdit.setObjectName("visCameraDirEdit")
         self.formLayout_2.addRow(self.visCameraDirLbl, self.visCameraDirEdit)
 

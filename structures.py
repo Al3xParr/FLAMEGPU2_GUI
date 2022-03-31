@@ -21,7 +21,14 @@ def isValidName(name: str):
 
 
 
-def checkVar(val: str, varType: str):
+def checkVar(val: str, varType: str, varList: dict = None):
+
+    
+    if varList is not None:
+        for v in varList.values():
+            if v["name"] == val and v["type"] == varType:
+                return True
+
 
     varType = varType.lower()
 
@@ -107,7 +114,7 @@ def checkVar(val: str, varType: str):
                 return True
         return False
 
-    elif varType == "uint64":
+    elif varType == "uint64" or varType == "id":
         if val.isdigit():
             if int(val) >= 0 and int(val) <= 18446744073709551615:
                 return True
