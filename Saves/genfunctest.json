@@ -1,0 +1,35 @@
+{
+    "config": {
+        "simName": "",
+        "steps": 0,
+        "seed": null,
+        "camera": [
+            0,
+            0,
+            0
+        ]
+    },
+    "layers": {
+        "1": []
+    },
+    "environment_variables": {},
+    "messages": {},
+    "function_blocks": {},
+    "agent_blocks": {},
+    "gen_func_blocks": {
+        "0": {
+            "name": "drilla",
+            "index": 1,
+            "pos": [
+                442,
+                182
+            ],
+            "code": "lol",
+            "funcType": "Step"
+        }
+    },
+    "lines": {},
+    "visual": {
+        "system": null
+    }
+}

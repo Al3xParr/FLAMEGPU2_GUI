@@ -23,8 +23,8 @@ class Ui_messageDialog(object):
 
     def setupUi(self, messageDialog):
         messageDialog.setObjectName("messageDialog")
-        messageDialog.resize(550, 450)
-        messageDialog.setFixedSize(550, 500)
+        messageDialog.resize(600, 450)
+        messageDialog.setFixedSize(600, 500)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -50,13 +50,13 @@ class Ui_messageDialog(object):
         self.msgVertLayout.addItem(spacerItem)
         self.msgScroll.setWidget(self.msgScrollContainer)
         self.msgTitle = QtWidgets.QLabel(messageDialog)
-        self.msgTitle.setGeometry(QtCore.QRect(320, 30, 121, 31))
+        self.msgTitle.setGeometry(QtCore.QRect(345, 30, 121, 31))
         font = QtGui.QFont()
         font.setPointSize(15)
         self.msgTitle.setFont(font)
         self.msgTitle.setObjectName("msgTitle")
         self.formLayoutWidget = QtWidgets.QWidget(messageDialog)
-        self.formLayoutWidget.setGeometry(QtCore.QRect(230, 80, 291, 51))
+        self.formLayoutWidget.setGeometry(QtCore.QRect(255, 80, 291, 51))
         self.formLayoutWidget.setObjectName("formLayoutWidget")
         self.formLayout = QtWidgets.QFormLayout(self.formLayoutWidget)
         self.formLayout.setContentsMargins(0, 0, 0, 0)
@@ -77,7 +77,7 @@ class Ui_messageDialog(object):
         self.newMsgType.currentTextChanged.connect(self.msgTypeChange)
         self.formLayout.setWidget(1, QtWidgets.QFormLayout.ItemRole.FieldRole, self.newMsgType)
         self.varScroll = QtWidgets.QScrollArea(messageDialog)
-        self.varScroll.setGeometry(QtCore.QRect(230, 150, 290, 150))
+        self.varScroll.setGeometry(QtCore.QRect(230, 150, 340, 150))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -96,14 +96,14 @@ class Ui_messageDialog(object):
         self.varVertLayout.addItem(spacerItem1)
         self.varScroll.setWidget(self.varScrollContainer)
         self.addVarBtn = QtWidgets.QPushButton(messageDialog)
-        self.addVarBtn.setGeometry(QtCore.QRect(419, 310, 101, 23))
+        self.addVarBtn.setGeometry(QtCore.QRect(445, 310, 101, 23))
         self.addVarBtn.setObjectName("addVarBtn")
         self.addMsgBtn = QtWidgets.QPushButton(messageDialog)
-        self.addMsgBtn.setGeometry(QtCore.QRect(230, 430, 291, 23))
+        self.addMsgBtn.setGeometry(QtCore.QRect(255, 430, 291, 23))
         self.addMsgBtn.setObjectName("addMsgBtn")
 
         self.paramsContainer = QtWidgets.QWidget(messageDialog)
-        self.paramsContainer.setGeometry(QtCore.QRect(230, 340, 290, 80))
+        self.paramsContainer.setGeometry(QtCore.QRect(255, 340, 290, 80))
 
         self.addVarBtn.clicked.connect(self.addVar)
         self.addMsgBtn.clicked.connect(self.addMsg)
@@ -132,7 +132,7 @@ class Ui_messageDialog(object):
             self.addImmutVar("Float", "x")
             self.addImmutVar("Float", "y")
             if msgText[-2] == "3":
-                self.addImmutVar("Flaot", "z")
+                self.addImmutVar("Float", "z")
             self.addSpacialInput(int(msgText[-2]))
         elif msgText[7:] == "Bucket":
             self.addBucketInput()
@@ -269,6 +269,7 @@ class Ui_messageDialog(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.newVarType.sizePolicy().hasHeightForWidth())
         self.newVarType.setSizePolicy(sizePolicy)
+        self.newVarType.setMaximumSize(QtCore.QSize(50, 20))
         self.newVarType.setObjectName(f"var{self.vars}Type")
         self.newVarType.addItems(["ID", "Float", "Double", "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64"])
         self.newVarBox.addWidget(self.newVarType)
@@ -289,6 +290,7 @@ class Ui_messageDialog(object):
         sizePolicy.setHeightForWidth(self.newVarDel.sizePolicy().hasHeightForWidth())
         self.newVarDel.setSizePolicy(sizePolicy)
         self.newVarDel.setMinimumSize(QtCore.QSize(20, 20))
+        self.newVarDel.setMaximumSize(QtCore.QSize(20, 20))
         self.newVarDel.setObjectName(f"var{self.vars}Del")
         self.newVarDel.setText("X")
 
@@ -357,21 +359,27 @@ class Ui_messageDialog(object):
             interactRad = self.radiusEdit.text()
             min = self.minEdit.text()
             max = self.maxEdit.text()
-            if not checkVar(interactRad, "float", self.parent().getEnvProps()):
+            interactRadVal = checkVar(interactRad, "float", self.parent().getEnvProps())
+            if interactRadVal is False:
                 self.errorMsg("Invalid parameter input")
                 return
             else:
-                params["radius"] = float(interactRad)
+                params["radius"] = interactRad #float
             
             minVals = min.split(",")
             params["min"] = []
 
-            for val in minVals:
-                if not checkVar(val.strip(), "float", self.parent().getEnvProps()):
+            for i, val in enumerate(minVals):
+                valVal = checkVar(val.strip(), "float", self.parent().getEnvProps(), False)
+                print("min")
+                print(val)
+                print(valVal)
+                if valVal is False:
                     self.errorMsg("Invalid parameter input")
                     return
                 else:
-                    params["min"].append(float(val.strip()))
+                    params["min"].append(val.strip()) # float
+                    minVals[i] = valVal
 
             if len(minVals) != int(msgType[-2]):
                 self.errorMsg("Not enough values were input (or in the wrong format)")
@@ -379,12 +387,15 @@ class Ui_messageDialog(object):
             
             params["max"] = []
             maxVals = max.split(",")
-            for val in maxVals:
-                if not checkVar(val.strip(), "float", self.parent().getEnvProps()):
+            for i, val in enumerate(maxVals):
+                print("max")
+                valVal = checkVar(val.strip(), "float", self.parent().getEnvProps(), False)
+                if valVal is False:
                     self.errorMsg("Invalid parameter input")
                     return
                 else:
-                    params["max"].append(float(val.strip()))
+                    params["max"].append(val.strip()) #float
+                    maxVals[i] = valVal
             if len(minVals) != int(msgType[-2]):
                 self.errorMsg("Not enough values were input (or in the wrong format)")
                 return
@@ -398,13 +409,16 @@ class Ui_messageDialog(object):
             minBound = self.minBoundEdit.text()
             maxBound = self.maxBoundEdit.text()
 
-            if (not checkVar(minBound, "int64", self.parent().getEnvProps())) or (not checkVar(maxBound, "int64", self.parent().getEnvProps())):
+            minBoundVal = checkVar(minBound, "int64", self.parent().getEnvProps(), False)
+            maxBoundVal = checkVar(maxBound, "int64", self.parent().getEnvProps(), False)
+
+            if (minBoundVal is False) or (maxBoundVal is False):
                 self.errorMsg("Invalid parameter input")
                 return
             else:
-                params["min"] = int(minBound)
-                params["max"] = int(maxBound)
-            if int(maxBound) < int(minBound):
+                params["min"] = minBound # int
+                params["max"] = maxBound #int
+            if int(maxBoundVal) < int(minBoundVal):
                 self.errorMsg("Minimum must be lower than maximum")
                 return
         
@@ -412,11 +426,12 @@ class Ui_messageDialog(object):
             dimensionVals = self.varScrollContainer.findChildren(QtWidgets.QLineEdit, QtCore.QRegularExpression("dimension[\d]+EditParam"))
             params["dimensions"] = []
             for val in dimensionVals:
-                if not checkVar(val.text(), "UInt32", self.parent().getEnvProps()):
+                valVal = checkVar(val.text(), "UInt32", self.parent().getEnvProps())
+                if valVal is False:
                     self.errorMsg("Invalid parameter input")
                     return
                 else:
-                    params["dimensions"].append(int(val))
+                    params["dimensions"].append(val) # int
         
         
 

@@ -51,7 +51,90 @@ class Block(QFrame):
         return False
 
 
-class FuncBlock(Block):
+
+    
+
+class ResizeBlock(Block):
+
+    def __init__(self, parent, name, index):
+        super().__init__(parent, name, index)
+        self.atSide = False
+        self.atBottom = False
+        self.moveBottom = False
+        self.moveSide = False
+        self.setMouseTracking(True)
+
+        
+    def posToSize(self, pos):    
+        width = pos.x()
+        height = pos.y()
+        return QtCore.QSize(width, height)
+
+    def mouseMoveEvent(self, e):
+        
+        if self.moveBottom and self.moveSide:
+            difference = self.posToSize(e.pos() - self.drag_start_position)
+            newSize = self.size() + difference
+            newSize.setHeight(max(newSize.height(), 100))
+            self.resize(newSize)
+            self.drag_start_position = e.pos()
+            return 
+        elif self.moveBottom:
+            difference = QtCore.QPoint(0, e.pos().y() - self.drag_start_position.y())
+            difference = self.posToSize(difference)
+            newSize = self.size() + difference
+            newSize.setHeight(max(newSize.height(), 100))
+            self.resize(newSize)
+            self.drag_start_position = e.pos()
+            return
+        elif self.moveSide:
+            difference =  QtCore.QPoint(e.pos().x() - self.drag_start_position.x(), 0)
+            difference = self.posToSize(difference)
+            self.resize(self.size() + difference)
+            self.drag_start_position = e.pos()
+            return
+        else:
+            ePos = e.pos()
+            sPos = QtCore.QPoint(self.width(), self.height())
+
+            self.atSide = False
+            self.atBottom = False
+
+            if ePos.x() > sPos.x() - 10 and ePos.x() < sPos.x() + 10:
+                self.atSide = True
+            if ePos.y() > sPos.y() - 10 and ePos.y() < sPos.y() + 10:
+                self.atBottom = True
+            
+            cursor = QCursor()
+
+            if self.atBottom and self.atSide:
+                cursor.setShape(Qt.CursorShape.SizeFDiagCursor)
+                self.setCursor(cursor)
+            elif self.atBottom:
+                cursor.setShape(Qt.CursorShape.SizeVerCursor)
+                self.setCursor(cursor)
+            elif self.atSide:
+                cursor.setShape(Qt.CursorShape.SizeHorCursor)
+                self.setCursor(cursor)
+            else:
+                self.atSide = False
+                self.atBottom = False
+                return super().mouseMoveEvent(e)
+
+    def mousePressEvent(self, e):
+        if e.buttons() == Qt.MouseButton.LeftButton:
+            self.drag_start_position = e.position().toPoint()
+            
+            self.moveBottom = True if self.atBottom else False
+            self.moveSide = True if self.atSide else False
+        
+    def mouseReleaseEvent(self, e):
+        self.moveBottom = False
+        self.moveSide = False
+        return super().mouseReleaseEvent(e)
+
+
+class FuncBlock(ResizeBlock):
 
     def __init__(self, parent, name, index, messages, inp_type = "", out_type = "", code = ""):
         super().__init__(parent, name, index)
@@ -60,17 +143,11 @@ class FuncBlock(Block):
         self.msg_list = messages
         self.code = code
 
-        self.atSide = False
-        self.atBottom = False
-        self.moveBottom = False
-        self.moveSide = False
-
-
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
 
-        self.setMouseTracking(True)
+        #self.setMouseTracking(True)
         
 
         self.nameLbl = QtWidgets.QLineEdit(self.name, self)
@@ -114,7 +191,6 @@ class FuncBlock(Block):
         self.codeTxtEdit.setPlaceholderText("Agent Function Behaviour Code...")
         sizePolicy.setHeightForWidth(self.codeTxtEdit.sizePolicy().hasHeightForWidth())
         self.codeTxtEdit.setSizePolicy(sizePolicy)
-        self.codeTxtEdit.setMinimumSize(QtCore.QSize(0, 100))
         self.gridLayout.addWidget(self.codeTxtEdit, 3, 0)
 
         self.delBtn = QtWidgets.QPushButton(self)
@@ -153,12 +229,7 @@ class FuncBlock(Block):
     def outChange(self):
         self.out_type = self.outCombo.currentText()
     
-    def dragged(self, point):
-        newPos = QtCore.QPoint(point-self.drag_start_position)
-        self.move(newPos)
-        self.parent().funcMoved(self.index, newPos)
 
-        return newPos
 
     def remove(self):
         parent = self.parent()
@@ -168,74 +239,17 @@ class FuncBlock(Block):
             label.setParent(None)
             circle.setParent(None)
             parent.funcRemoved(self.index)
+
+    def dragged(self, point):
+        newPos = QtCore.QPoint(point-self.drag_start_position)
+        self.move(newPos)
+        self.parent().funcMoved(self.index, newPos)
+
+        return newPos
+
     
-    def posToSize(self, pos):
-        width = pos.x()
-        height = pos.y()
-        return QtCore.QSize(width, height)
 
-    def mouseMoveEvent(self, e):
-        
-        if self.moveBottom and self.moveSide:
-            difference = e.pos() - self.drag_start_position
-            self.resize(self.size() + self.posToSize(difference))
-            self.drag_start_position = e.pos()
-            return 
-        elif self.moveBottom:
-            difference = QtCore.QPoint(0, e.pos().y() - self.drag_start_position.y())
-            self.resize(self.size() + self.posToSize(difference))
-            self.drag_start_position = e.pos()
-            return
-        elif self.moveSide:
-            difference =  QtCore.QPoint(e.pos().x() - self.drag_start_position.x(), 0)
-            self.resize(self.size() + self.posToSize(difference))
-            self.drag_start_position = e.pos()
-            return
-        else:
-            ePos = e.pos()
-            sPos = QtCore.QPoint(self.width(), self.height())
-
-            self.atSide = False
-            self.atBottom = False
-
-            if ePos.x() > sPos.x() - 10 and ePos.x() < sPos.x() + 10:
-                self.atSide = True
-            if ePos.y() > sPos.y() - 10 and ePos.y() < sPos.y() + 10:
-                self.atBottom = True
-            
-            cursor = QCursor()
-
-            if self.atBottom and self.atSide:
-                cursor.setShape(Qt.CursorShape.SizeFDiagCursor)
-                self.setCursor(cursor)
-            elif self.atBottom:
-                cursor.setShape(Qt.CursorShape.SizeVerCursor)
-                self.setCursor(cursor)
-            elif self.atSide:
-                cursor.setShape(Qt.CursorShape.SizeHorCursor)
-                self.setCursor(cursor)
-            else:
-                self.atSide = False
-                self.atBottom = False
-                return super().mouseMoveEvent(e)
-
-    def mousePressEvent(self, e):
-        if e.buttons() == Qt.MouseButton.LeftButton:
-            self.drag_start_position = e.position().toPoint()
-            
-            self.moveBottom = True if self.atBottom else False
-            self.moveSide = True if self.atSide else False
-        
-    def mouseReleaseEvent(self, e):
-        self.moveBottom = False
-        self.moveSide = False
-        return super().mouseReleaseEvent(e)
                 
-        
-
-
-        
-
     
 
 class AgentBlock(Block):
@@ -314,6 +328,7 @@ class AgentBlock(Block):
         self.move(newPos)
         self.parent().agentMoved(self.index, newPos)
         return newPos
+
     
     def updateVariables(self, name, varNames, varTypes, varVals, pop):
         self.name = name
@@ -334,10 +349,86 @@ class AgentBlock(Block):
         self.parent().openAgentEdit(self.index, self.name, self.var_names, self.var_types, self.var_vals, self.pop, visData)
 
 
-class HostFuncBlock(Block):
-    def __init__(self, parent, name, index, messages, code = ""):
+class HostFuncBlock(ResizeBlock):
+    def __init__(self, parent, name, index, funcType = "", code = ""):
         super().__init__(parent, name, index)
-        self.inp_type = inp_type
-        self.out_type = out_type
-        self.msg_list = messages
         self.code = code
+        self.funcType = funcType
+
+
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+
+        self.nameLbl = QtWidgets.QLineEdit(self.name, self)
+        self.nameLbl.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        font = QtGui.QFont()
+        font.setBold(True)
+        self.nameLbl.setFont(font)
+        sizePolicy.setHeightForWidth(self.nameLbl.sizePolicy().hasHeightForWidth())
+        self.nameLbl.setSizePolicy(sizePolicy)
+        self.nameLbl.setMinimumSize(QtCore.QSize(0, 20))
+        self.gridLayout.addWidget(self.nameLbl, 0, 0, 1, 0)
+
+        self.typeCombo = QtWidgets.QComboBox()
+        self.typeCombo.setObjectName("funcCombo")
+        self.typeCombo.setPlaceholderText("Function Type")
+        sizePolicy.setHeightForWidth(self.typeCombo.sizePolicy().hasHeightForWidth())
+        self.typeCombo.setSizePolicy(sizePolicy)
+        self.typeCombo.setMinimumSize(QtCore.QSize(0, 20))
+        self.typeCombo.addItems(["Init", "Step", "Exit", "Host-Layer"])
+
+        self.gridLayout.addWidget(self.typeCombo, 2, 0)
+
+        self.codeTxtEdit = QtWidgets.QTextEdit()
+        self.codeTxtEdit.setObjectName("codeTxtEdit")
+        self.codeTxtEdit.setPlaceholderText("Function Code...")
+        sizePolicy.setHeightForWidth(self.codeTxtEdit.sizePolicy().hasHeightForWidth())
+        self.codeTxtEdit.setSizePolicy(sizePolicy)
+        if self.code != "":
+            self.codeTxtEdit.setText(self.code)
+            
+        self.gridLayout.addWidget(self.codeTxtEdit, 3, 0)
+
+        self.delBtn = QtWidgets.QPushButton(self)
+        sizePolicy.setHeightForWidth(self.delBtn.sizePolicy().hasHeightForWidth())
+        self.delBtn.setSizePolicy(sizePolicy)
+        self.delBtn.setMinimumSize(QtCore.QSize(0, 25))
+        self.delBtn.setObjectName("funcDel")
+        self.delBtn.setText("Delete Function")
+        self.delBtn.clicked.connect(self.remove)
+        self.gridLayout.addWidget(self.delBtn, 4, 0)
+
+        if self.funcType != "":
+            i = self.typeCombo.findText(self.funcType)
+            self.typeCombo.setCurrentIndex(i)
+
+        self.nameLbl.textChanged.connect(self.changeName)
+        self.codeTxtEdit.textChanged.connect(self.changeCode)
+        self.typeCombo.currentTextChanged.connect(self.changeType)
+    
+    def changeName(self):
+        self.name = self.nameLbl.text()
+        flowLbl = self.parent().findChild(QtWidgets.QLabel, f"functionStep{self.index}")
+        if flowLbl != None:
+            flowLbl.setText(self.name)
+
+    def changeCode(self):
+        self.code = self.codeTxtEdit.toPlainText()
+
+    def changeType(self):
+        self.funcType = self.typeCombo.currentText()
+        if self.funcType == "Host-Layer":
+            self.parent().addLayerFunc(self.name, self.index)
+        else:
+            self.parent().removeLayerFunc(self.index)
+
+    
+    def dragged(self, point):
+        newPos = QtCore.QPoint(point-self.drag_start_position)
+        self.move(newPos)
+        return newPos
+
+    def remove(self):
+        self.parent().removeStepFunc(self.index)
+        super().remove()

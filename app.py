@@ -7,7 +7,7 @@ import sys
 import codeGen
 
 from mainWindow import Ui_MainWindow
-from Blocks import AgentBlock, FuncBlock
+from Blocks import AgentBlock, FuncBlock, HostFuncBlock
 
 
 
@@ -53,6 +53,11 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
             circleName = widget.objectName()[:-5] + "Circle"
             circle = parent.findChild(QtWidgets.QWidget, circleName)
             circle.move(newPos + QPoint(-8, 32))
+
+        elif widget.objectName()[:7] == "GenFunc": 
+            newPos = widget.dragged(pos.toPoint())
+
+
         self.update()
 
         e.accept()
@@ -127,6 +132,21 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         self.saveFile()
 
 
+        genBlocks = self.findChildren(HostFuncBlock)
+        initBlocks = []
+        stepBlocks = []
+        exitBlocks = []
+        layerBlocks = []
+        for g in genBlocks:
+            if g.funcType == "Init":
+                initBlocks.append(g)
+            elif g.funcType == "Step":
+                stepBlocks.append(g)
+            elif g.funcType == "Exit":
+                exitBlocks.append(g)
+            elif g.funcType == "Host-Layer":
+                layerBlocks.append(g)
+
         script = codeGen.CodeGen()
 
         script.write(["import pyflamegpu", "import sys, random, math", "import matplotlib.pyplot as plt", "", ""])
@@ -159,6 +179,13 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
                 script.write(f"message.setBounds({msg.params['min']}, {msg.params['max']})")
 
             for var, var_type in zip(msg.vars, msg.var_types):
+                if msg.msg_type == "MessageSpatial2D":
+                    if var == "x": continue
+                    if var == "y": continue
+                elif msg.msg_type == "MessageSpatial3D":
+                    if var == "x": continue
+                    if var == "y": continue
+                    if var == "z": continue
                 script.write(f"message.newVariable{var_type}(\"{var}\")")
             script.write("")
 
@@ -185,37 +212,86 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
             for msg in self.message_list:
                 if block.inp_type == msg.name:
                     inputMsgType = msg.msg_type
+                    if inputMsgType == "None":
+                        inputMsgType = "MessageNone"
                 if block.out_type == msg.name:
                     outMsgType = msg.msg_type
+                    if outMsgType == "None":
+                        outMsgType = "MessageNone"
             script.write(f"FLAMEGPU_AGENT_FUNCTION({block.name}, flamegpu::{inputMsgType}, flamegpu::{outMsgType}) {{", indent=1)
             script.write(block.code, indent=-1)
             script.write(['}', '"""', ''])
 
 
+        for block in initBlocks:
+            script.write(f'{block.name} = r"""')
+            script.write(f"FLAMEGPU_HOST_FUNCTION({block.name}) {{", indent=1)
+            script.write(block.code, indent=-1)
+            script.write('}')
+            script.write('"""')
+
+            script.write(f"model.addInitFunctionCallback({block.name}.__disown__())")
+
+
+
         for agentNum, funcNums in self.lines.items():
             for funcNum in funcNums:
                 func = [b for b in fBlocks if b.index == funcNum][0]
-                if func.out_type != "None":
+                if func.out_type != "":
                     script.write(f'agent{agentNum}.newRTCFunction("{func.name}", {func.name}).setMessageOutput("{func.out_type}")')
-                if func.inp_type != "None":
+                if func.inp_type != "":
                     script.write(f'agent{agentNum}.newRTCFunction("{func.name}", {func.name}).setMessageInput("{func.inp_type}")')
             script.write("")
         
         script.write("")
 
-        layersData = self.getLayersData()
+        layerFuncsNames = []
 
+        for block in layerBlocks:
+            script.write(f'{block.name} = r"""')
+            script.write(f"FLAMEGPU_HOST_FUNCTION({block.name}) {{", indent=1)
+            script.write(block.code, indent=-1)
+            script.write('}')
+            script.write('"""')
+            layerFuncsNames.append(block.name)
+        
+        script.write("")
+
+        layersData = self.getLayersData()
         for i, list in layersData.items():
             script.write("layer = model.newLayer()")
             for func in list:
+                
+                if func in layerFuncsNames:
+                    script.write(f"layer.addHostFunctionCallback({func}.__disown__())")
+                    continue
+
                 funcIndex = [b.index for b in fBlocks if b.name == func][0]
                 agentsIndex = [a for a, f in self.lines.items() if funcIndex in f]
                 
                 for a in agentsIndex:
-                    name = [agent.index for agent in aBlocks if agent.index == int(a)][0]
+                    name = [agent.name for agent in aBlocks if agent.index == int(a)][0]
                     script.write(f'layer.addAgentFunction("{name}", "{func}")')
             script.write("")
         
+
+        for block in exitBlocks:
+            script.write(f'{block.name} = r"""')
+            script.write(f"FLAMEGPU_HOST_FUNCTION({block.name}) {{", indent=1)
+            script.write(block.code, indent=-1)
+            script.write('}')
+            script.write('"""')
+
+            script.write(f"model.addStepFunctionCallback({block.name}.__disown__())")
+        
+        for block in exitBlocks:
+            script.write(f'{block.name} = r"""')
+            script.write(f"FLAMEGPU_HOST_FUNCTION({block.name}) {{", indent=1)
+            script.write(block.code, indent=-1)
+            script.write('}')
+            script.write('"""')
+
+            script.write(f"model.addExitFunctionCallback({block.name}.__disown__())")
 
         #POPULATION TRACKER
 
@@ -225,12 +301,14 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         script.write("if pyflamegpu.VISUALISATION:", indent=1)
         script.write("visualisation = cudaSimulation.getVisualisation()")
         script.write(f"visualisation.setSimulationSpeed({self.visData['system']['speed']})")
-        script.write(f"visualisation.setInitialCameraLocation{self.visData['system']['camera']}")
+        script.write(f"visualisation.setInitialCameraLocation{self.visData['system']['camPos']}")
 
         for i, a in enumerate(aBlocks):
 
             script.write(f'agent{i}Sim = visualisation.addAgent("{a.name}")')
-            script.write(f'agent{i}Sim.setModel(pyflamegpu.CUBE')
+            model = self.visData[a.name]["model"].upper()
+            script.write(f'agent{i}Sim.setModel(pyflamegpu.{model})')
+            script.write(f'agent{i}Sim.setModelScale({self.visData[a.name]["scale"]})')
         
         script.write("visualisation.activate()", indent = -1)
         script.write("")

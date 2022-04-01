@@ -21,28 +21,28 @@ class Ui_agentDialog(object):
 
     def setupUi(self, agentDialog):
         agentDialog.setObjectName("agentDialog")
-        agentDialog.resize(400, 330)
-        agentDialog.setFixedSize(400, 450)
+        agentDialog.resize(450, 330)
+        agentDialog.setFixedSize(450, 450)
         self.buttonBox = QtWidgets.QDialogButtonBox(agentDialog)
         self.buttonBox.setGeometry(QtCore.QRect(30, 410, 340, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.Cancel|QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.newAgentName = QtWidgets.QLineEdit(agentDialog)
-        self.newAgentName.setGeometry(QtCore.QRect(20, 20, 113, 20))
+        self.newAgentName.setGeometry(QtCore.QRect(20, 20, 135, 20))
         self.newAgentName.setObjectName("newAgentName")
 
         self.newAgentPop = QtWidgets.QLineEdit(agentDialog)
-        self.newAgentPop.setGeometry(QtCore.QRect(250, 20, 113, 20))
+        self.newAgentPop.setGeometry(QtCore.QRect(275, 20, 135, 20))
         self.newAgentPop.setObjectName("newAgentPop")
         self.newAgentPop.setPlaceholderText("Agent Population")
 
 
         self.agentAddVarBtn = QtWidgets.QPushButton(agentDialog)
-        self.agentAddVarBtn.setGeometry(QtCore.QRect(20, 240, 360, 23))
+        self.agentAddVarBtn.setGeometry(QtCore.QRect(20, 240, 410, 23))
         self.agentAddVarBtn.setObjectName("agentAddVarBtn")
         self.agentScroll = QtWidgets.QScrollArea(agentDialog)
-        self.agentScroll.setGeometry(QtCore.QRect(20, 60, 360, 171))
+        self.agentScroll.setGeometry(QtCore.QRect(20, 60, 410, 171))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -52,7 +52,7 @@ class Ui_agentDialog(object):
         self.agentScroll.setObjectName("agentScroll")
         self.agentScroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.agentScrollContainer = QtWidgets.QWidget()
-        self.agentScrollContainer.setGeometry(QtCore.QRect(0, 0, 358, 169))
+        self.agentScrollContainer.setGeometry(QtCore.QRect(0, 0, 408, 169))
         self.agentScrollContainer.setObjectName("agentScrollContainer")
         self.agentVertLayout = QtWidgets.QVBoxLayout(self.agentScrollContainer)
         self.agentVertLayout.setObjectName("agentVertLayout")
@@ -61,7 +61,7 @@ class Ui_agentDialog(object):
         self.agentScroll.setWidget(self.agentScrollContainer)
 
         self.visualiseWidget = QtWidgets.QWidget(agentDialog)
-        self.visualiseWidget.setGeometry(QtCore.QRect(20, 280, 360, 130))
+        self.visualiseWidget.setGeometry(QtCore.QRect(70, 280, 360, 130))
 
         self.visualiseLayout = QtWidgets.QFormLayout(agentDialog)
         
@@ -79,7 +79,7 @@ class Ui_agentDialog(object):
         self.visModelLbl.setText("Agent Mesh")
         self.visModelCombo = QtWidgets.QComboBox(agentDialog)
         self.visModelCombo.setObjectName("visModelCombo")
-        self.visModelCombo.addItems(["None", "Sphere", "Isosphere", "Cube", "Teapot", "Stuntplane"])
+        self.visModelCombo.addItems(["None", "Sphere", "Icosphere", "Cube", "Teapot", "Stuntplane"])
 
         self.visualiseLayout.addRow(self.visModelLbl, self.visModelCombo)
 
@@ -132,7 +132,8 @@ class Ui_agentDialog(object):
             self.errorMsg("Agent name")
             return
         
-        if (not population.isnumeric()) or int(population) < 0:
+        print(population)
+        if structures.checkVar(population, "Int", self.parent().getEnvProps(), False) is False:
             self.errorMsg("Agent Population")
             return
         
@@ -146,8 +147,8 @@ class Ui_agentDialog(object):
                 self.errorMsg("Variable name invalid")
                 return
             
-            value = contents[c].text() if contents[c].text() != "" else 0
-            if not structures.checkVar(value, contents[a].currentText(), self.parent().getEnvProps()):
+            value = contents[c].text() if contents[c].text() != "" else "0"
+            if structures.checkVar(value, contents[a].currentText(), self.parent().getEnvProps()) is False:
                 self.errorMsg("Value does not match type")
                 return
         
@@ -163,9 +164,9 @@ class Ui_agentDialog(object):
         visData = {"show": self.visConfirmBox.isChecked(), "model": self.visModelCombo.currentText(), "colour": self.visColourEdit.text(), "scale": self.visScaleBox.value()}
 
         if update:
-            self.parent().updateAgentBlock(index, name,agent_vars, agent_var_types, agent_var_vals, pop=int(population), visData=visData)
+            self.parent().updateAgentBlock(index, name,agent_vars, agent_var_types, agent_var_vals, pop=population, visData=visData)
         else:
-            self.parent().createAgentBlock(name, agent_vars, agent_var_types, agent_var_vals, pop=int(population), visData=visData)
+            self.parent().createAgentBlock(name, agent_vars, agent_var_types, agent_var_vals, pop=population, visData=visData)
         self.accept()
     
 
@@ -194,6 +195,7 @@ class Ui_agentDialog(object):
         sizePolicy.setHeightForWidth(self.newVarType.sizePolicy().hasHeightForWidth())
         self.newVarType.setSizePolicy(sizePolicy)
         self.newVarType.setMinimumSize(QtCore.QSize(0, 20))
+        self.newVarType.setMaximumSize(QtCore.QSize(50, 20))
         self.newVarType.setObjectName(f"varType{self.vars}")
         self.newVarType.addItems(["Float", "Double", "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32", "Int64", "UInt64"])
         self.newVarBox.addWidget(self.newVarType)
@@ -224,6 +226,7 @@ class Ui_agentDialog(object):
         sizePolicy.setHeightForWidth(self.newVarDel.sizePolicy().hasHeightForWidth())
         self.newVarDel.setSizePolicy(sizePolicy)
         self.newVarDel.setMinimumSize(QtCore.QSize(20, 20))
+        self.newVarDel.setMaximumSize(QtCore.QSize(20, 20))
         self.newVarDel.setObjectName(f"varDel{self.vars}")
         self.newVarDel.setText("X")
         self.newVarBox.addWidget(self.newVarDel)

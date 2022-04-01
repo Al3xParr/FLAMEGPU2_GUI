@@ -21,49 +21,57 @@ def isValidName(name: str):
 
 
 
-def checkVar(val: str, varType: str, varList: dict = None):
+def checkVar(val: str, varType: str, varList: dict = None, allowRandFuncs = True):
+
+    print(varList)
+    print(val)
 
     
     if varList is not None:
+        print("hmm")
         for v in varList.values():
-            if v["name"] == val and v["type"] == varType:
-                return True
+            if v["name"] == val:
+                print("hmm2")
+                val = v["value"]
+                
+                break
+
 
 
     varType = varType.lower()
-
-    if any(c.isalpha() for c in val):
-        outputType = type(eval(val)).__name__ # float/int
-        if outputType == "float" and (varType == "float" or varType == "double"):
-            return True
-        elif outputType == "int":
-            if "-" in val and varType[0] == "u":
-                return False
-            else:
+    if allowRandFuncs:
+        if any(c.isalpha() for c in val):
+            outputType = type(eval(val)).__name__ # float/int
+            if outputType == "float" and (varType == "float" or varType == "double"):
                 return True
-        else:
-            return False
+            elif outputType == "int":
+                if "-" in val and varType[0] == "u":
+                    return False
+                else:
+                    return True
+            else:
+                return False
             
 
     
     if varType == "float":
         try:
             np.single(val)
-            return True 
+            return float(val) 
         except ValueError:
             return False
 
     elif varType == "double":
         try:
             np.double(val)
-            return True 
+            return float(val) 
         except ValueError:
             return False
 
     elif varType == "int8":
         try:
             if int(val) >= -128 and int(val) <= 127:
-                return True
+                return int(val)
             else:
                 return False
         except ValueError:
@@ -72,7 +80,7 @@ def checkVar(val: str, varType: str, varList: dict = None):
     elif varType == "int16":
         try:
             if int(val) >= -32768 and int(val) <= 32767:
-                return True
+                return int(val)
             else:
                 return False
         except ValueError:
@@ -81,16 +89,16 @@ def checkVar(val: str, varType: str, varList: dict = None):
     elif varType == "int32":
         try:
             if int(val) >= -2147483648 and int(val) <= 2147483647:
-                return True
+                return int(val)
             else:
                 return False
         except ValueError:
             return False
 
-    elif varType == "int64":
+    elif varType == "int64" or varType == "int":
         try:
             if int(val) >= -9223372036854775808 and int(val) <= 9223372036854775807:
-                return True
+                return int(val)
             else:
                 return False
         except ValueError:
@@ -99,25 +107,25 @@ def checkVar(val: str, varType: str, varList: dict = None):
     elif varType == "uint8":
         if val.isdigit():
             if int(val) >= 0 and int(val) <= 255:
-                return True
+                return int(val)
         return False
 
     elif varType == "uint16":
         if val.isdigit():
             if int(val) >= 0 and int(val) <= 65535:
-                return True
+                return int(val)
         return False
 
     elif varType == "uint32":
         if val.isdigit():
             if int(val) >= 0 and int(val) <= 4294967295:
-                return True
+                return int(val)
         return False
 
     elif varType == "uint64" or varType == "id":
         if val.isdigit():
             if int(val) >= 0 and int(val) <= 18446744073709551615:
-                return True
+                return int(val)
         return False
 
     else:

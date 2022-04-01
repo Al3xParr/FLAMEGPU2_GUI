@@ -14,7 +14,7 @@ from modClasses import DragLabel, Circle
 from msgDialog import MsgDialog
 from agentDialog import AgentDialog
 from configDialog import ConfigDialog
-from Blocks import AgentBlock, FuncBlock
+from Blocks import AgentBlock, FuncBlock, HostFuncBlock
 from structures import Message
 import structures
 import json
@@ -30,6 +30,7 @@ class Ui_MainWindow(object):
         self.envProps = 0
         self.agentBlockNum = 0
         self.funcBlockNum = 0
+        self.genFuncBlockNum = 0
         self.setAcceptDrops(True)
         self.message_list = []
         self.drawLine = False
@@ -102,7 +103,7 @@ class Ui_MainWindow(object):
         self.addEnvPropBtn.setMinimumSize(QtCore.QSize(230, 23))
         self.addEnvPropBtn.setObjectName("addEnvPropBtn")
         self.flowFrame = QtWidgets.QFrame(self.centralwidget)
-        self.flowFrame.setGeometry(QtCore.QRect(self.frameSize().width()-170, 0, 170, 311))
+        self.flowFrame.setGeometry(QtCore.QRect(self.frameSize().width()-180, 0, 180, 350))
         self.flowFrame.setLayoutDirection(QtCore.Qt.LayoutDirection.LeftToRight)
         self.flowFrame.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.flowFrame.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
@@ -176,6 +177,8 @@ class Ui_MainWindow(object):
         self.actionAddAgent.setObjectName("actionAddAgent")
         self.actionAddFunc = QtGui.QAction(MainWindow)
         self.actionAddFunc.setObjectName("actionAddFunc")
+        self.actionAddGenFunc = QtGui.QAction(MainWindow)
+        self.actionAddGenFunc.setObjectName("actionAddGenFunc")
         self.menuFile.addAction(self.action_Save)
         self.menuFile.addAction(self.action_SaveAs)
         self.menuFile.addAction(self.actionOpen)
@@ -184,6 +187,7 @@ class Ui_MainWindow(object):
         self.menuRun.addAction(self.actionLaunch)
         self.menuAgent.addAction(self.actionAddAgent)
         self.menuAgent.addAction(self.actionAddFunc)
+        self.menuAgent.addAction(self.actionAddGenFunc)
         self.menubar.addAction(self.menuFile.menuAction())
         self.menubar.addAction(self.menuAgent.menuAction())
         self.menubar.addAction(self.menuMessages.menuAction())
@@ -201,6 +205,7 @@ class Ui_MainWindow(object):
         self.actionView_Messages.triggered.connect(self.openMsg)
         self.actionAddAgent.triggered.connect(self.openAgentAdd)
         self.actionAddFunc.triggered.connect(lambda: self.createFunctionBlock())
+        self.actionAddGenFunc.triggered.connect(lambda: self.createGenFuncBlock())
         self.actionConfig.triggered.connect(self.openConfig)
         self.action_Save.triggered.connect(self.saveFile)
         self.action_SaveAs.triggered.connect(self.saveAs)
@@ -228,7 +233,9 @@ class Ui_MainWindow(object):
         self.actionConfig.setText(_translate("MainWindow", "Config"))
         self.actionLaunch.setText(_translate("MainWindow", "Launch"))
         self.actionAddAgent.setText(_translate("MainWindow", "Add Agent"))
-        self.actionAddFunc.setText(_translate("MainWindow", "Add Function"))
+        self.actionAddFunc.setText(_translate("MainWindow", "Add Agent Function"))
+        self.actionAddGenFunc.setText(_translate("MainWindow", "Add General Function"))
+
     
     def closeEvent(self, e):
         confirm = QMessageBox.question(self, 'Window Close', 'Are you sure you want to close the window?',
@@ -275,6 +282,23 @@ class Ui_MainWindow(object):
         self.newConenctor.show()
         self.funcPositions[index] = pos
 
+    def createGenFuncBlock(self, name = "", funcType = "", code = "", pos = None, index = None):
+        
+        if pos == None:
+            pos = QtCore.QPoint(500, 500)
+        self.genFuncBlockNum += 1
+
+        if name == "":
+            name = f"Gen_Function_{self.genFuncBlockNum}_Name" 
+
+        if index == None:
+            index = self.genFuncBlockNum
+
+        
+        newGenFuncBlock = HostFuncBlock(self, name, index, funcType, code)
+        newGenFuncBlock.setObjectName(f"GenFunc{index}Block")
+        newGenFuncBlock.move(pos)
+
 
     def paintEvent(self, e):
         paint = QtGui.QPainter()
@@ -287,7 +311,7 @@ class Ui_MainWindow(object):
         paint.end()
 
     def resizeEvent(self, e):
-        self.flowFrame.setGeometry(QtCore.QRect(self.frameSize().width()-170, 0, 170, 311))
+        self.flowFrame.setGeometry(QtCore.QRect(self.frameSize().width()-180, 0, 180, 350))
         self.envPropFrame.setGeometry(QtCore.QRect(0, 0, 270, self.frameSize().height()-20))
         self.envPropScroll.setGeometry(QtCore.QRect(0, 40, 270, self.frameSize().height()-140))
         self.addEnvPropBtn.setGeometry(QtCore.QRect(10, self.frameSize().height()-90, 250, 23))
@@ -363,6 +387,26 @@ class Ui_MainWindow(object):
         self.newLbl.setText(name)
         self.newLbl.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.flowVertLayout.insertWidget(self.flowVertLayout.count()-1, self.newLbl)
+
+    def addLayerFunc(self, name, index):
+
+        self.newLbl = DragLabel(self.flowScrollContents)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.newLbl.sizePolicy().hasHeightForWidth())
+        self.newLbl.setSizePolicy(sizePolicy)
+        self.newLbl.setMinimumSize(QtCore.QSize(0, 20))
+        self.newLbl.setObjectName(f"functionStep{index}")
+        self.newLbl.setText(name)
+        self.newLbl.setFrameShape(QtWidgets.QFrame.Shape.Box)
+        self.flowVertLayout.insertWidget(self.flowVertLayout.count()-1, self.newLbl)
+
+    def removeLayerFunc(self, index):
+
+        funcLbl = self.flowScrollContents.findChild(DragLabel, f"functionStep{index}")
+        if funcLbl != None:
+            funcLbl.setParent(None)
 
     def addEnvProp(self, name = "", dataType = "", val = ""):
 
@@ -631,9 +675,16 @@ class Ui_MainWindow(object):
             p = block.pos()
             pos = [p.x(), p.y()]
             agentBlocksJSON[i] = {"name": block.name, "index": block.index, "pos": pos, "var_names": block.var_names, "var_types": block.var_types, "var_values": block.var_vals, "population": block.pop}
+        
+        genFuncBlockList = self.findChildren(HostFuncBlock)
+        genFuncBlockJSON = {}
+        for i, block in enumerate(genFuncBlockList):
+            p = block.pos()
+            pos = [p.x(), p.y()]
+            genFuncBlockJSON[i] = {"name": block.name, "index": block.index, "pos": pos, "code": block.code, "funcType": block.funcType}
 
 
-        saveJSON = {"config": self.config, "layers": layersJSON, "environment_variables": envVarsJSON, "messages": msgsJSON, "function_blocks": funcBlocksJSON, "agent_blocks": agentBlocksJSON, "lines": self.lines, "visual": self.visData}
+        saveJSON = {"config": self.config, "layers": layersJSON, "environment_variables": envVarsJSON, "messages": msgsJSON, "function_blocks": funcBlocksJSON, "agent_blocks": agentBlocksJSON, "gen_func_blocks": genFuncBlockJSON, "lines": self.lines, "visual": self.visData}
 
         with open(self.saveLoc, "w") as outfile:
             json.dump(saveJSON, outfile)
@@ -656,6 +707,7 @@ class Ui_MainWindow(object):
                 messagesData = data["messages"]
                 funcBlocksData = data["function_blocks"]
                 agentBlocksData = data["agent_blocks"]
+                genFuncBlockData = data["gen_func_blocks"]
                 linesData = data["lines"]
                 configData = data["config"]
                 self.visData = data["visual"]
@@ -678,6 +730,7 @@ class Ui_MainWindow(object):
         self.agentPositions = {}
         self.funcPositions = {}
         self.linkedFuncList = {}
+        self.genFuncBlockNum = 0
 
         self.config = configData
 
@@ -692,6 +745,10 @@ class Ui_MainWindow(object):
         for aBlock in agentBlocksData.values():
             pos = QtCore.QPoint(aBlock["pos"][0], aBlock["pos"][1])
             self.createAgentBlock(aBlock["name"], aBlock["var_names"], aBlock["var_types"], aBlock["var_values"], pos, aBlock["index"], aBlock["population"], self.visData[aBlock["name"]])
+
+        for gBlock in genFuncBlockData.values():
+            pos = QtCore.QPoint(gBlock["pos"][0], gBlock["pos"][1])
+            self.createGenFuncBlock(gBlock["name"], gBlock["funcType"], gBlock["code"], pos, gBlock["index"])
 
         displayedFuncs = []
         for key, val in layersData.items():
@@ -762,6 +819,11 @@ class Ui_MainWindow(object):
             name = self.envPropScrollContainer.findChild(QtWidgets.QLineEdit, f"envName{itemIndex}").text()
             typ = self.envPropScrollContainer.findChild(QtWidgets.QComboBox, f"envType{itemIndex}").currentText()
             value = self.envPropScrollContainer.findChild(QtWidgets.QLineEdit, f"envVal{itemIndex}").text()
+
+            if structures.checkVar(value, typ) is False:
+                self.errorMsg("Invalid value in environment properties")
+                return
+
 
             outDict[itemIndex] = {"name": name, "type": typ, "value": value}
         
