@@ -39,7 +39,10 @@ class Block(QFrame):
             drag.setMimeData(mime)
             drag.exec(Qt.DropAction.MoveAction)        
     
-    def remove(self):
+    def remove(self, confirm = True):
+        if not confirm:
+            self.setParent(None)
+            return True
         confirmBox = QtWidgets.QMessageBox()
         confirmBox.setText(f"Delete request for {self.name}")
         confirmBox.setInformativeText(f"Are you sure you want to delete the {self.name}?")
@@ -189,6 +192,7 @@ class FuncBlock(ResizeBlock):
         self.codeTxtEdit = QtWidgets.QTextEdit()
         self.codeTxtEdit.setObjectName("codeTxtEdit")
         self.codeTxtEdit.setPlaceholderText("Agent Function Behaviour Code...")
+        self.codeTxtEdit.setText(self.code)
         sizePolicy.setHeightForWidth(self.codeTxtEdit.sizePolicy().hasHeightForWidth())
         self.codeTxtEdit.setSizePolicy(sizePolicy)
         self.gridLayout.addWidget(self.codeTxtEdit, 3, 0)
@@ -214,11 +218,14 @@ class FuncBlock(ResizeBlock):
         self.codeTxtEdit.textChanged.connect(self.changeCode)
     
     def changeName(self):
+        
+        flowLblList = self.parent().findChildren(QtWidgets.QLabel, QtCore.QRegularExpression(f"function{self.index}.*"))
+        namelength = len(self.name)
+        flowLbl = [lbl for lbl in flowLblList if lbl.text()[:namelength] == self.name]
         self.name = self.nameLbl.text()
-        flowLblList = self.parent().findChildren(QtWidgets.QLabel, f"function{self.index}")
-        flowLbl = [lbl for lbl in flowLblList if lbl.text() == self.name]
-        if len(flowLbl) > 0:
-            flowLbl[0].setText(self.name)
+        for lbl in flowLbl:
+            newText = self.name + lbl.text()[namelength:]
+            lbl.setText(newText)
 
     def changeCode(self):
         self.code = self.codeTxtEdit.toPlainText()
@@ -231,14 +238,16 @@ class FuncBlock(ResizeBlock):
     
 
 
-    def remove(self):
+    def remove(self, confirm):
         parent = self.parent()
-        label = parent.findChild(QtWidgets.QLabel, f"function{self.index}")
+        labels = parent.findChildren(QtWidgets.QLabel, f"function{self.index}.*")
+        
         circle = parent.findChild(QtWidgets.QWidget, f"Function{self.index}Circle")
-        if super().remove():
-            label.setParent(None)
+        if super().remove(confirm):
+            #list(map(lambda x : x.setParent(None), labels))
+            parent.removeFunc(self)
             circle.setParent(None)
-            parent.funcRemoved(self.index)
+            parent.funcRemoved(self.index, self.name)
 
     def dragged(self, point):
         newPos = QtCore.QPoint(point-self.drag_start_position)
@@ -315,12 +324,12 @@ class AgentBlock(Block):
         self.gridLayout.addWidget(self.delBtn, len(self.var_names)+1, 0, len(self.var_names)+1, 2)
 
 
-    def remove(self):
+    def remove(self, confirm):
         parent = self.parent()
         circle = parent.findChild(QtWidgets.QWidget, f"Agent{self.index}Circle")
-        if super().remove():
+        if super().remove(confirm):
             circle.setParent(None)
-            parent.agentRemoved(self.index)
+            parent.agentRemoved(self.index, self.name)
 
 
     def dragged(self, point):
@@ -421,7 +430,7 @@ class HostFuncBlock(ResizeBlock):
         if self.funcType == "Host-Layer":
             self.parent().addLayerFunc(self.name, self.index)
         else:
-            self.parent().removeLayerFunc(self.index)
+            self.parent().removeLayerFunc(self)
 
     
     def dragged(self, point):
@@ -429,6 +438,7 @@ class HostFuncBlock(ResizeBlock):
         self.move(newPos)
         return newPos
 
-    def remove(self):
-        self.parent().removeStepFunc(self.index)
-        super().remove()
+    def remove(self, confirm):
+        parent = self.parent()
+        if super().remove(confirm) and self.funcType == "Host-Layer":
+                parent.removeLayerFunc(self)

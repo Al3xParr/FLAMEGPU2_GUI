@@ -14,11 +14,12 @@ from modClasses import DragLabel, Circle
 from msgDialog import MsgDialog
 from agentDialog import AgentDialog
 from configDialog import ConfigDialog
-from Blocks import AgentBlock, FuncBlock, HostFuncBlock
+from Blocks import Block, AgentBlock, FuncBlock, HostFuncBlock
 from structures import Message
 import structures
 import json
 import os
+import re
 
 
 class Ui_MainWindow(object):
@@ -26,7 +27,7 @@ class Ui_MainWindow(object):
     def __init__(self):
         super().__init__()
         self.layers = 0
-        self.functions = 0
+        #self.functions = 0
         self.envProps = 0
         self.agentBlockNum = 0
         self.funcBlockNum = 0
@@ -61,6 +62,7 @@ class Ui_MainWindow(object):
         self.envPropFrame.setFrameShadow(QtWidgets.QFrame.Shadow.Plain)
         self.envPropFrame.setLineWidth(1)
         self.envPropFrame.setObjectName("envPropFrame")
+        self.envPropFrame.setAutoFillBackground(True)
         self.envPropTitle = QtWidgets.QLabel(self.envPropFrame)
         self.envPropTitle.setGeometry(QtCore.QRect(10, 10, 251, 21))
         font = QtGui.QFont()
@@ -108,6 +110,7 @@ class Ui_MainWindow(object):
         self.flowFrame.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.flowFrame.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
         self.flowFrame.setObjectName("flowFrame")
+        self.flowFrame.setAutoFillBackground(True)
         self.gridLayout = QtWidgets.QGridLayout(self.flowFrame)
         self.gridLayout.setObjectName("gridLayout")
         self.flowScroll = QtWidgets.QScrollArea(self.flowFrame)
@@ -246,12 +249,12 @@ class Ui_MainWindow(object):
         else:
             e.ignore()
 
-    def deleteLayer(self):
-        widget = self.sender()
-        index = "".join([n for n in widget.objectName() if n.isdigit()])
-
-        self.removeItem(widget)
+    def deleteLayer(self, elem=None):
+        widget = self.sender() if elem == None else elem
         index = int(widget.objectName()[5:-3])
+
+        self.removeLayer(widget)
+        
         for i in range(index+1, self.layers+2):
             box = self.flowScrollContents.findChild(QtWidgets.QHBoxLayout, f"layer{i}box")
             box.setObjectName(f"layer{i-1}box")
@@ -282,6 +285,7 @@ class Ui_MainWindow(object):
         self.newConenctor.show()
         self.funcPositions[index] = pos
 
+
     def createGenFuncBlock(self, name = "", funcType = "", code = "", pos = None, index = None):
         
         if pos == None:
@@ -298,7 +302,6 @@ class Ui_MainWindow(object):
         newGenFuncBlock = HostFuncBlock(self, name, index, funcType, code)
         newGenFuncBlock.setObjectName(f"GenFunc{index}Block")
         newGenFuncBlock.move(pos)
-
 
     def paintEvent(self, e):
         paint = QtGui.QPainter()
@@ -367,14 +370,17 @@ class Ui_MainWindow(object):
         self.newLayerBox.addWidget(self.newLbl)
         self.newLayerBox.addWidget(self.layerDel)
 
-        self.layerDel.clicked.connect(self.deleteLayer)
+        self.layerDel.clicked.connect(lambda: self.deleteLayer())
 
         children = self.flowVertLayout.count()
         self.flowVertLayout.insertLayout(children-1, self.newLayerBox)
 
 
-    def addFunc(self, name):
-        self.functions += 1
+    def addFunc(self, name, funcIndex, agentName):
+        #self.functions += 1
+
+        self.newFuncBox = QtWidgets.QHBoxLayout()
+        self.newFuncBox.setObjectName(f"function{funcIndex}box({agentName})")
 
         self.newLbl = DragLabel(self.flowScrollContents)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Fixed)
@@ -383,10 +389,47 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.newLbl.sizePolicy().hasHeightForWidth())
         self.newLbl.setSizePolicy(sizePolicy)
         self.newLbl.setMinimumSize(QtCore.QSize(0, 20))
-        self.newLbl.setObjectName(f"function{self.functions}")
+
+        self.newLbl.setObjectName(f"function{funcIndex}({agentName})")
+
         self.newLbl.setText(name)
         self.newLbl.setFrameShape(QtWidgets.QFrame.Shape.Box)
-        self.flowVertLayout.insertWidget(self.flowVertLayout.count()-1, self.newLbl)
+
+
+        self.funcDel = QtWidgets.QPushButton(self.flowScrollContents)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.funcDel.sizePolicy().hasHeightForWidth())
+        self.funcDel.setSizePolicy(sizePolicy)
+        self.funcDel.setMinimumSize(QtCore.QSize(20, 20))
+        self.funcDel.setCheckable(False)
+        self.funcDel.setObjectName(f"function{funcIndex}Del({agentName})")
+        self.funcDel.setText("X")
+        self.newFuncBox.addWidget(self.newLbl)
+        self.newFuncBox.addWidget(self.funcDel)
+
+        self.funcDel.clicked.connect(self.funcRemovedFromControlFlow)
+
+
+        self.flowVertLayout.insertLayout(self.flowVertLayout.count()-1, self.newFuncBox)
+
+    def funcRemovedFromControlFlow(self):
+        
+        objName = self.sender().objectName()
+        index = objName.split("Del")[0][8:]
+        name = self.findChild(Block, f"Function{index}Block").name
+
+        agentName = objName.split("(")[1][:-1]
+        agentBlocks = self.findChildren(AgentBlock)
+        agentIndex = None
+        for a in agentBlocks:
+            if a.name == agentName:
+                agentIndex = a.index
+
+        self.funcRemoved(index, name, agentName, agentIndex)
+        self.removeFunc(self.sender())
+
 
     def addLayerFunc(self, name, index):
 
@@ -397,15 +440,21 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.newLbl.sizePolicy().hasHeightForWidth())
         self.newLbl.setSizePolicy(sizePolicy)
         self.newLbl.setMinimumSize(QtCore.QSize(0, 20))
-        self.newLbl.setObjectName(f"functionStep{index}")
+        self.newLbl.setObjectName(f"stepFunction{index}")
         self.newLbl.setText(name)
         self.newLbl.setFrameShape(QtWidgets.QFrame.Shape.Box)
         self.flowVertLayout.insertWidget(self.flowVertLayout.count()-1, self.newLbl)
+        
 
-    def removeLayerFunc(self, index):
+    #def removeLayerFunc(self, index: int):
+    #    funcLbl = self.flowScrollContents.findChild(DragLabel, f"stepFunction{index}")
+    #    if funcLbl != None:
+    #        funcLbl.setParent(None)
 
-        funcLbl = self.flowScrollContents.findChild(DragLabel, f"functionStep{index}")
-        if funcLbl != None:
+    def removeLayerFunc(self, lbl: DragLabel):
+        index = "".join([n for n in lbl.objectName() if n.isdigit()])
+        funcLbl = self.flowScrollContents.findChild(DragLabel, f"stepFunction{index}")
+        if funcLbl is not None:
             funcLbl.setParent(None)
 
     def addEnvProp(self, name = "", dataType = "", val = ""):
@@ -452,15 +501,15 @@ class Ui_MainWindow(object):
         self.newEnvDel.setObjectName(f"envDel{self.envProps}")
         self.newEnvPropBox.addWidget(self.newEnvDel)
 
-        self.newEnvDel.clicked.connect(self.removeItem)
+        self.newEnvDel.clicked.connect(lambda: self.removeEnvProp())
 
         if name != "":
-            self.newEnvName.setText(name)
+            self.newEnvName.setText(str(name))
         if dataType != "":
             temp = self.newEnvType.findText(dataType)
             self.newEnvType.setCurrentIndex(temp)
         if val != "":
-            self.newEnvVal.setText(val)
+            self.newEnvVal.setText(str(val))
 
         children = self.envVertLayout.count()
         self.envVertLayout.insertLayout(children-1, self.newEnvPropBox)
@@ -515,32 +564,94 @@ class Ui_MainWindow(object):
                     return index
         return None
 
+    #def remove
+
+    def removeEnvProp(self, widget=None):
+        if widget == None:
+            widget = self.sender()
+        
+        index = "".join([n for n in widget.objectName() if n.isdigit()])
+
+        for child in self.envPropScrollContainer.children():
+            childIndex = "".join([n for n in child.objectName() if n.isdigit()])
+            if childIndex == index:
+                child.setParent(None)
+
+        self.envProps -= 1
+    
+    def removeFunc(self, widget=None):
+        if widget == None:
+            widget = self.sender()
+        nameSplit = widget.objectName().split("(")
+        index = "".join([n for n in nameSplit[0] if n.isdigit()])
+        if len(nameSplit) > 1:
+            agentName = widget.objectName().split("(")[1][:-1]
+            layerElements = self.flowScrollContents.findChildren((QtWidgets.QHBoxLayout, QtWidgets.QLabel, QtWidgets.QPushButton), 
+                                                                QtCore.QRegularExpression(f"function{index}.*[(]{agentName}[)]"))
+        else:
+            layerElements = self.flowScrollContents.findChildren((QtWidgets.QHBoxLayout, QtWidgets.QLabel, QtWidgets.QPushButton), 
+                                                                QtCore.QRegularExpression(f"function{index}.*"))
+        
+        for child in layerElements:
+            #childIndex = "".join([n for n in child.objectName() if n.isdigit()])
+            #if childIndex == index:
+            #    child.setParent(None)
+            child.setParent(None)
+        
+
+    def removeLayer(self, widget=None):
+        if widget == None:
+            widget = self.sender()
+        
+        index = "".join([n for n in widget.objectName() if n.isdigit()])
+
+        layerElements = self.flowScrollContents.findChildren((QtWidgets.QHBoxLayout, QtWidgets.QLabel, QtWidgets.QPushButton), 
+                                                                QtCore.QRegularExpression("layer.*"))
+        
+        for child in layerElements:
+            childIndex = "".join([n for n in child.objectName() if n.isdigit()])
+            if childIndex == index:
+                child.setParent(None)
+        
+        self.layers -= 1
+        
+    
+
+
+    """
     def removeItem(self, widget):
         
         if not isinstance(widget, QtCore.QObject):
             widget = self.sender()
 
-        layout = widget.parent().layout()
-        items = layout.children()
+        #layout = widget.parent().layout()
+        #items = layout.children()
 
-        w_num = "".join([n for n in widget.objectName() if n.isdigit()])
+        #w_num = "".join([n for n in widget.objectName() if n.isdigit()])
+        widgName = widget.objectName()
+        name = list(filter(None, re.split("\d", widgName)))[0]
+        nums = list(filter(None, re.split("[a-zA-Z]", widgName)))[0]
+        baseName = name+nums
 
-        for item in items:
-            i_num = "".join([n for n in item.objectName() if n.isdigit()])  
-            if i_num == w_num:                  
-                layout.removeItem(item)
-                break
-        
+        #for item in items:
+        #    i_num = "".join([n for n in item.objectName() if n.isdigit()])  
+        #    if i_num == w_num:                  
+        #        layout.removeItem(item)
+        #        break
+        print(widgName)
         for child in widget.parent().children():
             c_num = "".join([n for n in child.objectName() if n.isdigit()])
-            if c_num == w_num and (child.objectName()[:5] == "layer" or child.objectName()[:3] == "env"):
+            print(f"child Number: {c_num}")
+            if c_num == w_num and (child.objectName()[:5] == "layer" or child.objectName()[:3] == "env" or child.objectName()[:8] == "function"):
                 child.setParent(None)
         
-        if item.objectName()[:5] == "layer":
+        if widget.objectName()[:5] == "layer":
             self.layers -= 1
-        elif item.objectName()[:3] == "env":
+        elif widget.objectName()[:3] == "env":
             self.envProps -= 1
-
+        #elif widget.objectName()[:8] == "function" and  widget.objectName()[9] != "S":
+            #self.fuctions -= 1
+    """
 
 
     def moveFlowFunc(self, label, pos):
@@ -561,7 +672,6 @@ class Ui_MainWindow(object):
     def createMessage(self, name, msg_type, vars, var_types, params):
         new_msg = Message(name, msg_type, vars, var_types, params)
         self.message_list.append(new_msg)
-        print(new_msg.params)
         
         combo_list = self.findChildren(QtWidgets.QComboBox, QtCore.QRegularExpression("^messageCombo.*"))
         for combo in combo_list:
@@ -583,14 +693,51 @@ class Ui_MainWindow(object):
                     break    
 
 
-    def funcRemoved(self, index):
+    def funcRemoved(self, index, name, agentName="", agentIndex=None):
+
+        if agentIndex is not None:
+            if int(agentIndex) in self.lines.keys():
+                self.lines[agentIndex].remove(int(index))
+            if agentName in self.linkedFuncList.keys():
+                self.linkedFuncList[agentName].remove(name)
+            self.update()
+            return
+        
+        toDelete = []
         for key, val in self.lines.items():
-            if index in val:
-                val.remove(index)
-    
-    def agentRemoved(self, index):
+            if int(index) in val:
+                self.lines[key].remove(int(index))
+                if len(val) == 0:
+                    toDelete.append(key)
+        
+        for item in toDelete:
+            del self.lines[item]
+        
+        toDelete = []
+        for key, val in self.linkedFuncList.items():
+            if name in val:
+                self.linkedFuncList[key].remove(name)
+                if len(val) == 0:
+                    toDelete.append(key)
+        
+        for item in toDelete:
+            del self.linkedFuncList[item]
+
+        self.update()
+
+
+    def agentRemoved(self, index, name):
         if index in self.lines.keys():
             self.lines.pop(index)
+        
+        if name in self.linkedFuncList.keys():
+            del self.linkedFuncList[name]
+        
+        listedFuncs = self.flowScrollContents.findChildren(DragLabel)
+        nameLength = len(name)
+        for lbl in listedFuncs:
+            if lbl.text()[-(nameLength+2):] == f"({name})":
+                lbl.setParent(None)
     
     def saveAs(self):
         homeDir = str(os.getcwd())
@@ -607,7 +754,7 @@ class Ui_MainWindow(object):
             if not structures.isValidName(obj["name"]):
                 self.errorMsg(f"Invalid variable name: {obj['name']}")
                 return False
-            if not structures.checkVar(obj['value'], obj['type']):
+            if not structures.checkVar(str(obj['value']), obj['type']):
                 self.errorMsg(f"Value and type not compatible: {obj['type']} -> {obj['value']}")
                 return False
         
@@ -634,7 +781,8 @@ class Ui_MainWindow(object):
                 layerNum = itemName[5:-3]
                 layersJSON[layerNum] = []
             elif itemName[:4] == "func":
-                layersJSON[layerNum].append(item.widget().text())
+                name = item.layout().itemAt(0).widget().text()
+                layersJSON[layerNum].append(name)
         
         return layersJSON
     
@@ -674,7 +822,8 @@ class Ui_MainWindow(object):
         for i, block in enumerate(agentBlockList):
             p = block.pos()
             pos = [p.x(), p.y()]
-            agentBlocksJSON[i] = {"name": block.name, "index": block.index, "pos": pos, "var_names": block.var_names, "var_types": block.var_types, "var_values": block.var_vals, "population": block.pop}
+            agentBlocksJSON[i] = {"name": block.name, "index": block.index, "pos": pos, "var_names": block.var_names, "var_types": block.var_types, 
+                                    "var_values": block.var_vals, "population": block.pop}
         
         genFuncBlockList = self.findChildren(HostFuncBlock)
         genFuncBlockJSON = {}
@@ -684,7 +833,8 @@ class Ui_MainWindow(object):
             genFuncBlockJSON[i] = {"name": block.name, "index": block.index, "pos": pos, "code": block.code, "funcType": block.funcType}
 
 
-        saveJSON = {"config": self.config, "layers": layersJSON, "environment_variables": envVarsJSON, "messages": msgsJSON, "function_blocks": funcBlocksJSON, "agent_blocks": agentBlocksJSON, "gen_func_blocks": genFuncBlockJSON, "lines": self.lines, "visual": self.visData}
+        saveJSON = {"config": self.config, "layers": layersJSON, "environment_variables": envVarsJSON, "messages": msgsJSON, "function_blocks": funcBlocksJSON, 
+                    "agent_blocks": agentBlocksJSON, "gen_func_blocks": genFuncBlockJSON, "lines": self.lines, "visual": self.visData, "linked_funcs": self.linkedFuncList}
 
         with open(self.saveLoc, "w") as outfile:
             json.dump(saveJSON, outfile)
@@ -710,18 +860,37 @@ class Ui_MainWindow(object):
                 genFuncBlockData = data["gen_func_blocks"]
                 linesData = data["lines"]
                 configData = data["config"]
-                self.visData = data["visual"]
+                visDataData = data["visual"]
+                linkedFuncListData = data["linked_funcs"]
             except:
                 print("load error")
                 return
 
-        labelsToRemove = self.flowScrollContents.findChildren(QtWidgets.QLabel)
-        for label in labelsToRemove:
-            self.removeItem(label)
+
+        #REDO THIS ALL
+        #SEPARATE LSITS OF LAYERS, FUNCS AND ENV VARIABLES
+        #SEPARATE FUNCTIONS TO DELETE THEM
+
+        layersToRemove = self.flowScrollContents.findChildren(QtWidgets.QPushButton, QtCore.QRegularExpression("layer.*"))
+        for layer in layersToRemove:
+            self.removeLayer(layer)
+
+        
+        envPropsToRemove = self.envPropScrollContainer.findChildren(QtWidgets.QPushButton)
+        for prop in envPropsToRemove:
+            self.removeEnvProp(prop)
+
+
+        #list(map(lambda lbl: self.removeItem(lbl), labelsToRemove))
+        
+        blockList = self.findChildren(Block)
+        list(map(lambda x: x.remove(False), blockList))
+
+        
 
         #Resets all variables storing data about state of program
         self.layers = 0
-        self.functions = 0
+        #self.functions = 0
         self.envProps = 0
         self.agentBlockNum = 0
         self.funcBlockNum = 0
@@ -729,12 +898,15 @@ class Ui_MainWindow(object):
         self.lines = {}
         self.agentPositions = {}
         self.funcPositions = {}
-        self.linkedFuncList = {}
+        #self.linkedFuncList = {}
         self.genFuncBlockNum = 0
 
         self.config = configData
 
         self.lines = linesData
+
+        self.visData = visDataData
+        self.linkedFuncList = linkedFuncListData
 
         for msg in messagesData.values():
             self.message_list.append(Message(msg["name"], msg["type"], msg["vars"], msg["var_types"], msg["params"]))
@@ -755,12 +927,20 @@ class Ui_MainWindow(object):
             self.addLayer()
             for func in val:
                 for fBlock in funcBlocksData.values():
-                    if fBlock["name"] == func.split("(")[0] and fBlock["name"] not in displayedFuncs:
-                        displayedFuncs.append(fBlock["name"])
-                        pos = QtCore.QPoint(fBlock["pos"][0], fBlock["pos"][1])
-                        self.createFunctionBlock(fBlock["name"], fBlock["inp_type"], fBlock["out_type"], pos, fBlock["index"], fBlock["code"])
-                self.addFunc(func)
-        
+                    if fBlock["name"] == func.split("(")[0]:
+                        if "(" in func:
+                            agentLink = func.split("(")[1][:-1]
+                            self.addFunc(func, fBlock["index"], agentLink)
+                        else:
+                            for k, v in self.linkedFuncList.items():
+                                if func in v:
+                                    self.addFunc(func, fBlock["index"], k)
+                        if fBlock["name"] not in displayedFuncs:
+                            displayedFuncs.append(fBlock["name"])
+                            pos = QtCore.QPoint(fBlock["pos"][0], fBlock["pos"][1])
+                            self.createFunctionBlock(fBlock["name"], fBlock["inp_type"], fBlock["out_type"], pos, fBlock["index"], code = fBlock["code"])
+                
+        """
         agentList = self.findChildren(AgentBlock)
         funcList = self.findChildren(FuncBlock)
 
@@ -773,7 +953,7 @@ class Ui_MainWindow(object):
                 index = int(index)
                 funcName = [f.name for f in funcList if f.index == index][0]
                 self.linkedFuncList[agentName].append(funcName)
-
+        """
 
 
 
@@ -820,12 +1000,13 @@ class Ui_MainWindow(object):
             typ = self.envPropScrollContainer.findChild(QtWidgets.QComboBox, f"envType{itemIndex}").currentText()
             value = self.envPropScrollContainer.findChild(QtWidgets.QLineEdit, f"envVal{itemIndex}").text()
 
-            if structures.checkVar(value, typ) is False:
+            newVal = structures.checkVar(value, typ)
+            if newVal is False:
                 self.errorMsg("Invalid value in environment properties")
                 return
 
 
-            outDict[itemIndex] = {"name": name, "type": typ, "value": value}
+            outDict[itemIndex] = {"name": name, "type": typ, "value": newVal}
         
         return outDict
     

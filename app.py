@@ -1,8 +1,10 @@
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtWidgets import QMainWindow, QApplication
 from PyQt6.QtCore import Qt, QPoint
+from sqlalchemy import values
 
 from structures import Message
+import subprocess
 import sys
 import codeGen
 
@@ -99,20 +101,23 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
                     break
             if alreadyPresent:
                 funcs = self.flowScrollContents.findChildren(QtWidgets.QLabel,  QtCore.QRegularExpression("function.*"))
+                print(funcs)
                 for f in funcs:
                     if f.text() == funcName:
                         for k, v in self.linkedFuncList.items():
                             if funcName in v:
                                 f.setText(funcName + f"({k})")
 
-                self.addFunc(funcName+f"({agentName})")
+                self.addFunc(f"{funcName}({agentName})", self.funcIndex, agentName)
             else:
-                self.addFunc(funcName)
+                self.addFunc(funcName, self.funcIndex, agentName)
 
             if agentName in self.linkedFuncList.keys():
                 self.linkedFuncList[agentName].append(funcName)
             else:
                 self.linkedFuncList[agentName] = [funcName]
+        
+        print(self.linkedFuncList)
 
         self.lineStart = QtCore.QPoint()
         self.lineEnd = QtCore.QPoint()
@@ -126,11 +131,21 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         self.config["steps"] = steps
         self.config["seed"] = seed
         self.visData["system"] = visData
-    
+
+    def convertToLiteral(self, string, variables):
+        for v in variables.values():
+            if v["name"] == string:
+                return f"env.getProperty{v['type']}(\"{string}\")"
+        
+        return string
+        
+        
 
     def buildScript(self):
         self.saveFile()
 
+        #Messages Values
+        #Agent values-
 
         genBlocks = self.findChildren(HostFuncBlock)
         initBlocks = []
@@ -160,20 +175,38 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
             script.write(f"env.newProperty{prop['type']}(\"{prop['name']}\", {prop['value']})")
         script.write("")
 
-        for msg in self.message_list:
+        compileMessageList = []
+        for i, msg in enumerate(self.message_list):
+            compileMessageList.append(msg)
+            params = msg.params
+
+            for key, val in params.items():
+                print(val)
+                if not isinstance(val, list):
+                    params[key] = self.convertToLiteral(val, envProps)
+                else:
+                    print("list")
+                    for j, var in enumerate(val):
+                        params[key][j] = self.convertToLiteral(var, envProps)
+
+            compileMessageList[i].params = params
+
+        for msg in compileMessageList:
             script.write(f"message = model.new{msg.msg_type}(\"{msg.name}\")")
 
             if msg.msg_type[:-2] == "MessageSpatial":
                 script.write(f"message.setRadius({msg.params['radius']})")
-                mins = tuple(msg.params["min"])
+
+                mins = "(" + ", ".join(msg.params["min"]) + ")"
                 script.write(f"message.setMin{mins}")
-                maxs = tuple(msg.params["max"])
+                maxs = "(" + ", ".join(msg.params["max"]) + ")"
                 script.write(f"message.setMax{maxs}")
+
             elif msg.msg_type == "MessageArray":
                 length = int(msg.params["dimensions"])
                 script.write(f"message.setLength({length})")
             elif msg.msg_type == "MessageArray2D" or msg.msg_type == "MessageArray3D":
-                dimen = tuple(msg.params["dimensions"])
+                dimen = "(" + ", ".join(msg.params["dimensions"]) + ")"
                 script.write(f"message.setDimensions{dimen}")
             elif msg.msg_type == "MessageBucket":
                 script.write(f"message.setBounds({msg.params['min']}, {msg.params['max']})")
@@ -218,6 +251,10 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
                     outMsgType = msg.msg_type
                     if outMsgType == "None":
                         outMsgType = "MessageNone"
+            if inputMsgType == "None":
+                inputMsgType = "MessageNone"
+            if outMsgType == "None":
+                outMsgType = "MessageNone"
             script.write(f"FLAMEGPU_AGENT_FUNCTION({block.name}, flamegpu::{inputMsgType}, flamegpu::{outMsgType}) {{", indent=1)
             script.write(block.code, indent=-1)
             script.write(['}', '"""', ''])
@@ -258,9 +295,9 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         script.write("")
 
         layersData = self.getLayersData()
-        for i, list in layersData.items():
+        for i, layerList in layersData.items():
             script.write("layer = model.newLayer()")
-            for func in list:
+            for func in layerList:
                 
                 if func in layerFuncsNames:
                     script.write(f"layer.addHostFunctionCallback({func}.__disown__())")
@@ -308,7 +345,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
             script.write(f'agent{i}Sim = visualisation.addAgent("{a.name}")')
             model = self.visData[a.name]["model"].upper()
             script.write(f'agent{i}Sim.setModel(pyflamegpu.{model})')
-            script.write(f'agent{i}Sim.setModelScale({self.visData[a.name]["scale"]})')
+            script.write(f'agent{i}Sim.setModelScale({self.convertToLiteral(self.visData[a.name]["scale"], envProps)})')
         
         script.write("visualisation.activate()", indent = -1)
         script.write("")
@@ -323,13 +360,13 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
 
 
         for a in aBlocks:
-            script.write(f'{a.name}Pop = pyflamegpu.AgentVector(model.Agent("{a.name}"), {a.pop})')
+            script.write(f'{a.name}Pop = pyflamegpu.AgentVector(model.Agent("{a.name}"), {self.convertToLiteral(a.pop, envProps)})')
             script.write("")
-            script.write(f"for i in range({a.pop}):", indent=1)
+            script.write(f"for i in range({self.convertToLiteral(a.pop, envProps)}):", indent=1)
             script.write(f"agent = {a.name}Pop[i]")
 
             for varName, varType, varVal in zip(a.var_names, a.var_types, a.var_vals):
-                script.write(f'agent.setVariable{varType}(\"{varName}\", {varVal})')
+                script.write(f'agent.setVariable{varType}(\"{varName}\", {self.convertToLiteral(varVal, envProps)})')
 
             script.write("", indent = -1)
         
@@ -345,6 +382,21 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
 
         script.save(self.saveLoc[:-5]+".py")
 
+        
+        fullFileLoc = self.saveLoc[:-5]+".py"
+
+        import os 
+        os.system(f'python {fullFileLoc}')
+
+    def resetAll(self):
+        super(BaseWindow, self).__init__()
+        
+        self.setupUi(self)
+        self.config = {"simName": "", "steps": 0, "seed": None, "camera": (0, 0, 0)}
+
+        self.agentIndex = None
+        self.funcIndex = None
+
 
 
 
@@ -357,3 +409,4 @@ def runApp():
 
 if __name__ == "__main__":
     runApp()
+

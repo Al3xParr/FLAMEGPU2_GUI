@@ -199,9 +199,6 @@ class Ui_messageDialog(object):
         self.maxEdit.setGeometry(QtCore.QRect(205, 50, 75, 20))
         self.maxEdit.show()
 
-
-
-
     def addBucketInput(self):
         self.boundsLbl = QtWidgets.QLabel(self.paramsContainer)
         self.boundsLbl.setObjectName("boundLblParam")
@@ -371,9 +368,6 @@ class Ui_messageDialog(object):
 
             for i, val in enumerate(minVals):
                 valVal = checkVar(val.strip(), "float", self.parent().getEnvProps(), False)
-                print("min")
-                print(val)
-                print(valVal)
                 if valVal is False:
                     self.errorMsg("Invalid parameter input")
                     return
@@ -388,7 +382,6 @@ class Ui_messageDialog(object):
             params["max"] = []
             maxVals = max.split(",")
             for i, val in enumerate(maxVals):
-                print("max")
                 valVal = checkVar(val.strip(), "float", self.parent().getEnvProps(), False)
                 if valVal is False:
                     self.errorMsg("Invalid parameter input")
@@ -431,7 +424,7 @@ class Ui_messageDialog(object):
                     self.errorMsg("Invalid parameter input")
                     return
                 else:
-                    params["dimensions"].append(val) # int
+                    params["dimensions"].append(val.text()) # int
         
         
 

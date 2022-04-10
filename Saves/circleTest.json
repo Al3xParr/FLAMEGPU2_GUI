@@ -52,7 +52,7 @@
             "var_types": [
                 "Float",
                 "Float",
-                "Flaot",
+                "Float",
                 "ID"
             ],
             "params": {
@@ -115,9 +115,9 @@
                 "Float"
             ],
             "var_values": [
-                "random.random()",
-                "random.random()",
-                "random.random()",
+                "random.random()*25",
+                "random.random()*25",
+                "random.random()*25",
                 "0"
             ],
             "population": "AGENT_COUNT"
@@ -154,5 +154,11 @@
             "colour": "fcba03",
             "scale": 0.03
         }
+    },
+    "linked_funcs": {
+        "Circle": [
+            "output_message",
+            "move"
+        ]
     }
 }

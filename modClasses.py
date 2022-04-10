@@ -4,6 +4,9 @@ from PyQt6.QtGui import QDrag, QPixmap, QPainter, QPen, QBrush
 
 class DragLabel(QLabel):
 
+    def __init__(self, parent):
+        super().__init__(parent)
+
     def mouseMoveEvent(self, e):
         if e.buttons() == Qt.MouseButton.LeftButton:
             drag = QDrag(self)
