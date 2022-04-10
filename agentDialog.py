@@ -91,9 +91,9 @@ class Ui_agentDialog(object):
 
         self.visScaleLbl = QtWidgets.QLabel(agentDialog)
         self.visScaleLbl.setText("Agent Mesh Scale")
-        self.visScaleBox = QtWidgets.QSpinBox(agentDialog)
+        self.visScaleBox = QtWidgets.QDoubleSpinBox(agentDialog)
         self.visScaleBox.setObjectName("visScaleBox")
-        self.visScaleBox.setSingleStep(0.001)
+        self.visScaleBox.setSingleStep(0.01)
         self.visScaleBox.setMaximum(2147483647)
 
         self.visualiseLayout.addRow(self.visScaleLbl, self.visScaleBox)
