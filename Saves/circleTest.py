@@ -8,8 +8,8 @@ seed = 0
 env = model.Environment()
 
 env.newPropertyFloat("RADIUS", 2.0)
-env.newPropertyInt("AGENT_COUNT", 16384)
-env.newPropertyFloat("ENV_MAX", 25)
+env.newPropertyUInt16("AGENT_COUNT", 16384)
+env.newPropertyFloat("ENV_MAX", 25.0)
 env.newPropertyFloat("repulse", 0.05)
 
 message = model.newMessageSpatial3D("location")
@@ -103,7 +103,8 @@ if pyflamegpu.VISUALISATION:
 	visualisation.setInitialCameraLocation(30, 30, 30)
 	agent0Sim = visualisation.addAgent("Circle")
 	agent0Sim.setModel(pyflamegpu.ICOSPHERE)
-	agent0Sim.setModelScale(0.15)
+	agent0Sim.setModelScale(0.05)
+	agent0Sim.setColor(pyflamegpu.Color("#fcba03"));
 	visualisation.activate()
 
 if seed is not None:
@@ -112,13 +113,13 @@ if seed is not None:
 
 if not cudaSimulation.SimulationConfig().input_file:
 	random.seed(cudaSimulation.SimulationConfig().random_seed)
-	CirclePop = pyflamegpu.AgentVector(model.Agent("Circle"), env.getPropertyInt("AGENT_COUNT"))
+	CirclePop = pyflamegpu.AgentVector(model.Agent("Circle"), env.getPropertyUInt16("AGENT_COUNT"))
 	
-	for i in range(env.getPropertyInt("AGENT_COUNT")):
+	for i in range(env.getPropertyUInt16("AGENT_COUNT")):
 		agent = CirclePop[i]
-		agent.setVariableFloat("x", random.random()*env.getPropertyFloat("ENV_MAX"))
-		agent.setVariableFloat("y", random.random()*env.getPropertyFloat("ENV_MAX"))
-		agent.setVariableFloat("z", random.random()*env.getPropertyFloat("ENV_MAX"))
+		agent.setVariableFloat("x", random.random()*25)
+		agent.setVariableFloat("y", random.random()*25)
+		agent.setVariableFloat("z", random.random()*25)
 		agent.setVariableFloat("drift", 0)
 		
 	cudaSimulation.setPopulationData(CirclePop)

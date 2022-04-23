@@ -10,7 +10,7 @@ from fileinput import filename
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtCore import Qt
-from modClasses import DragLabel, Circle
+from modClasses import DragLabel, Circle, DragBox
 from msgDialog import MsgDialog
 from agentDialog import AgentDialog
 from configDialog import ConfigDialog
@@ -237,7 +237,7 @@ class Ui_MainWindow(object):
         self.actionLaunch.setText(_translate("MainWindow", "Launch"))
         self.actionAddAgent.setText(_translate("MainWindow", "Add Agent"))
         self.actionAddFunc.setText(_translate("MainWindow", "Add Agent Function"))
-        self.actionAddGenFunc.setText(_translate("MainWindow", "Add General Function"))
+        self.actionAddGenFunc.setText(_translate("MainWindow", "Add Host Function"))
 
     
     def closeEvent(self, e):
@@ -379,10 +379,11 @@ class Ui_MainWindow(object):
     def addFunc(self, name, funcIndex, agentName):
         #self.functions += 1
 
-        self.newFuncBox = QtWidgets.QHBoxLayout()
+        #self.newFuncBox = QtWidgets.QHBoxLayout()
+        self.newFuncBox = DragBox()
         self.newFuncBox.setObjectName(f"function{funcIndex}box({agentName})")
 
-        self.newLbl = DragLabel(self.flowScrollContents)
+        self.newLbl = QtWidgets.QLabel(self.flowScrollContents)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -403,6 +404,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.funcDel.sizePolicy().hasHeightForWidth())
         self.funcDel.setSizePolicy(sizePolicy)
         self.funcDel.setMinimumSize(QtCore.QSize(20, 20))
+        self.funcDel.setMaximumSize(QtCore.QSize(20, 20))
         self.funcDel.setCheckable(False)
         self.funcDel.setObjectName(f"function{funcIndex}Del({agentName})")
         self.funcDel.setText("X")

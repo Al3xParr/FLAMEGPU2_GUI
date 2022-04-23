@@ -346,6 +346,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
             model = self.visData[a.name]["model"].upper()
             script.write(f'agent{i}Sim.setModel(pyflamegpu.{model})')
             script.write(f'agent{i}Sim.setModelScale({self.convertToLiteral(self.visData[a.name]["scale"], envProps)})')
+            script.write(f'agent{i}Sim.setColor(pyflamegpu.Color("#{self.visData[a.name]["colour"]}"));')
         
         script.write("visualisation.activate()", indent = -1)
         script.write("")
@@ -379,6 +380,8 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         script.write("")
         script.write("if pyflamegpu.VISUALISATION:", indent=1)
         script.write("visualisation.join()")
+
+        
 
         script.save(self.saveLoc[:-5]+".py")
 

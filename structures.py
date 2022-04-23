@@ -36,7 +36,7 @@ def checkVar(inpVal: str, varType: str, varList: dict = None, allowRandFuncs = T
     if varList is not None:
         for v in varList.values():
             if v["name"] == val:
-                val = v["value"]
+                val = str(v["value"])
                 break
 
     varType = varType.lower()
