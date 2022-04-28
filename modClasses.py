@@ -22,8 +22,8 @@ class DragLabel(QLabel):
 
 class DragBox(QHBoxLayout):
 
-    def __init__(self,):
-        super().__init__()
+    def __init__(self, parent):
+        super().__init__(parent)
 
     def mouseMoveEvent(self, e):
         if e.buttons() == Qt.MouseButton.LeftButton:
@@ -33,7 +33,7 @@ class DragBox(QHBoxLayout):
             self.render(pixmap)
             drag.setPixmap(pixmap)
 
-            drag.setHotSpot(e.position().toPoint() - self.rect().topLeft())
+            drag.setHotSpot(e.position().toPoint() - self.geometry().topLeft())
 
             drag.setMimeData(mime)
             drag.exec(Qt.DropAction.MoveAction)

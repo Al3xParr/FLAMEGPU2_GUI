@@ -32,9 +32,20 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
 
     def dropEvent(self, e):
         pos = e.position()
-        widget = e.source()
-        if widget.parent().objectName() == "flowScrollContents":
-            self.moveFlowFunc(widget, pos)
+        source = e.source()
+        if source.parent().objectName() == "flowScrollContents":
+            print(source.objectName())
+            if source.objectName()[:4] == "step":
+                self.moveFlowFunc(source, pos)
+            else:
+                for x in range(self.flowVertLayout.count()-1):
+                    item = self.flowVertLayout.itemAt(x)
+                    if isinstance(item, QtWidgets.QWidgetItem): continue
+                    print("item type: ", type(item))
+                    if item.objectName().split("(")[0][:-3] == source.objectName().split("(")[0]:
+                        layout = item
+                        self.moveFlowFunc(layout, pos)
+                        break
 
         e.accept()
     

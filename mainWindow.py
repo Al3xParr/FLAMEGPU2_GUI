@@ -379,11 +379,11 @@ class Ui_MainWindow(object):
     def addFunc(self, name, funcIndex, agentName):
         #self.functions += 1
 
-        #self.newFuncBox = QtWidgets.QHBoxLayout()
-        self.newFuncBox = DragBox()
+        self.newFuncBox = QtWidgets.QHBoxLayout()
+        #self.newFuncBox = DragBox()
         self.newFuncBox.setObjectName(f"function{funcIndex}box({agentName})")
 
-        self.newLbl = QtWidgets.QLabel(self.flowScrollContents)
+        self.newLbl = DragLabel(self.flowScrollContents)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -656,20 +656,37 @@ class Ui_MainWindow(object):
     """
 
 
-    def moveFlowFunc(self, label, pos):
-        if label.text()[:5] == "Layer":
+    def moveFlowFunc(self, obj, pos):
+        if obj.objectName()[:5] == "Layer":
             return False
 
+        isLayout = True if isinstance(obj, QtWidgets.QLayout) else False
+
+
+        print(type(obj))
+
+
         for num in range(self.flowVertLayout.count()-1):
-            g = self.flowVertLayout.itemAt(num).geometry()
+            item = self.flowVertLayout.itemAt(num)       
+            g = item.geometry()
 
             if pos.y() < g.y() + g.size().width() // 2:
-                self.flowVertLayout.insertWidget(max(num, 1), label)
+                if isLayout:
+                    self.flowVertLayout.removeItem(obj)
+                    self.flowVertLayout.insertLayout(max(num, 1), obj)
+                else:
+                    self.flowVertLayout.insertWidget(max(num, 1), obj)
                 return True
+            
 
         index = self.flowVertLayout.count() - 2
-        self.flowVertLayout.insertWidget(index , label)
+        if isLayout:
+            self.flowVertLayout.removeItem(obj)
+            self.flowVertLayout.insertLayout(index , obj.layout())
+        else:
+            self.flowVertLayout.insertWidget(index , obj)
         return True
+
     
     def createMessage(self, name, msg_type, vars, var_types, params):
         new_msg = Message(name, msg_type, vars, var_types, params)
