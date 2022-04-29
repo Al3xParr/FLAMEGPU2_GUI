@@ -1,10 +1,9 @@
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtWidgets import QMainWindow, QApplication
 from PyQt6.QtCore import Qt, QPoint
-from sqlalchemy import values
+#from sqlalchemy import values
 
 from structures import Message
-import subprocess
 import sys
 import codeGen
 
@@ -399,8 +398,8 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         
         fullFileLoc = self.saveLoc[:-5]+".py"
 
-        import os 
-        os.system(f'python {fullFileLoc}')
+        
+        subprocess.Popen(["python", fullFileLoc])
 
     def resetAll(self):
         super(BaseWindow, self).__init__()
