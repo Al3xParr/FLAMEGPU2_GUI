@@ -1,0 +1,13 @@
+    static float prevTotalDrift = FLT_MAX;
+    static unsigned int driftDropped = 0;
+    static unsigned int driftIncreased = 0;
+    // This value should decline? as the model moves towards a steady equlibrium state
+    // Once an equilibrium state is reached, it is likely to oscillate between 2-4? values
+    float totalDrift = FLAMEGPU->agent("Circle").sum<float>("drift");
+    if (totalDrift <= prevTotalDrift)
+        driftDropped++;
+    else
+        driftIncreased++;
+    prevTotalDrift = totalDrift;
+    // printf("Avg Drift: %g\n", totalDrift / FLAMEGPU->agent("Circle").count());
+    printf("%.2f%% Drift correct\n", 100 * driftDropped / static_cast<float>(driftDropped + driftIncreased));

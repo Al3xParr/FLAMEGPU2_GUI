@@ -1,0 +1,48 @@
+Environment Properties:
+Float - RADIUS - 2.0
+UInt16 - AGENT_COUNT - 16384
+Float - ENV_MAX - 25.0
+Float - repulse - 0.05
+
+
+Circle Agent:
+Population - AGENT_COUNT
+Properties:
+	- float - x - random.random()*25
+	- float - y - random.random()*25
+	- float - z - random.random()*25
+	- float - drift - 0
+Visualise - Yes
+Mesh - Icosphere
+Colour - fcba03
+Scale - 0.05
+
+
+Location Message:
+Type - MessageSpatial3D
+Variables:
+	- float - x
+	- float - y
+	- float - z
+	- ID - id
+Radius - RADIUS
+Min - 0, 0, 0
+Max - 25, 25, 25
+
+
+Host Functions:
+Validation - Step
+
+
+Control Flow:
+Layer 1 - output_message - Layer 2 - move
+
+
+Config:
+CircleModel
+1000
+0
+Yes
+30
+(30, 30, 30)
+(0, 0, 0)

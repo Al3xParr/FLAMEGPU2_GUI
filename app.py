@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QMainWindow, QApplication
 from PyQt6.QtCore import Qt, QPoint
 #from sqlalchemy import values
 
+import subprocess
 from structures import Message
 import sys
 import codeGen
