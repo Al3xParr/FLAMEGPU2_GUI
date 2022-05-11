@@ -54,9 +54,7 @@ class Block(QFrame):
         return False
 
 
-
-    
-
+#Class to extend block that allows for resizing
 class ResizeBlock(Block):
 
     def __init__(self, parent, name, index):
@@ -148,10 +146,7 @@ class FuncBlock(ResizeBlock):
 
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-
-        #self.setMouseTracking(True)
-        
+        sizePolicy.setVerticalStretch(0)       
 
         self.nameLbl = QtWidgets.QLineEdit(self.name, self)
         self.nameLbl.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
@@ -244,7 +239,6 @@ class FuncBlock(ResizeBlock):
         
         circle = parent.findChild(QtWidgets.QWidget, f"Function{self.index}Circle")
         if super().remove(confirm):
-            #list(map(lambda x : x.setParent(None), labels))
             parent.removeFunc(self)
             circle.setParent(None)
             parent.funcRemoved(self.index, self.name)
@@ -256,10 +250,6 @@ class FuncBlock(ResizeBlock):
 
         return newPos
 
-    
-
-                
-    
 
 class AgentBlock(Block):
 

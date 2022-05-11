@@ -1,17 +1,13 @@
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtWidgets import QMainWindow, QApplication
 from PyQt6.QtCore import Qt, QPoint
-#from sqlalchemy import values
 
 import subprocess
-from structures import Message
 import sys
 import codeGen
 
 from mainWindow import Ui_MainWindow
 from Blocks import AgentBlock, FuncBlock, HostFuncBlock
-
-
 
 
 class BaseWindow(QMainWindow, Ui_MainWindow):
@@ -154,9 +150,6 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
 
     def buildScript(self):
         self.saveFile()
-
-        #Messages Values
-        #Agent values-
 
         genBlocks = self.findChildren(HostFuncBlock)
         initBlocks = []
