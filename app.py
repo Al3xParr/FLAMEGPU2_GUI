@@ -271,15 +271,21 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
             script.write(['}', '"""', ''])
 
 
-        for block in initBlocks:
-            script.write(f'{block.name} = r"""')
-            script.write(f"FLAMEGPU_HOST_FUNCTION({block.name}) {{", indent=1)
+        for block in genBlocks:
+            script.write(f'class {block.name}(pyflamegpu.HostFunctionCallback):', indent=1)
             script.write(block.code, indent=-1)
-            script.write('}')
-            script.write('"""')
+            script.write("")
+        
+        script.write("")
+        
+        for block in initBlocks:
+            script.write(f"model.addInitFunctionCallback({block.name}().__disown__())")
 
-            script.write(f"model.addInitFunctionCallback({block.name}.__disown__())")
-
+        for block in stepBlocks:
+            script.write(f"model.addStepFunctionCallback({block.name}().__disown__())")
+        
+        for block in exitBlocks:
+            script.write(f"model.addExitFunctionCallback({block.name}().__disown__())")
 
 
         for agentNum, funcNums in self.lines.items():
@@ -296,11 +302,6 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         layerFuncsNames = []
 
         for block in layerBlocks:
-            script.write(f'{block.name} = r"""')
-            script.write(f"FLAMEGPU_HOST_FUNCTION({block.name}) {{", indent=1)
-            script.write(block.code, indent=-1)
-            script.write('}')
-            script.write('"""')
             layerFuncsNames.append(block.name)
         
         script.write("")
@@ -311,7 +312,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
             for func in layerList:
                 
                 if func in layerFuncsNames:
-                    script.write(f"layer.addHostFunctionCallback({func}.__disown__())")
+                    script.write(f"layer.addHostFunctionCallback({func}().__disown__())")
                     continue
 
                 funcIndex = [b.index for b in fBlocks if b.name == func][0]
@@ -322,24 +323,6 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
                     script.write(f'layer.addAgentFunction("{name}", "{func}")')
             script.write("")
         
-
-        for block in exitBlocks:
-            script.write(f'{block.name} = r"""')
-            script.write(f"FLAMEGPU_HOST_FUNCTION({block.name}) {{", indent=1)
-            script.write(block.code, indent=-1)
-            script.write('}')
-            script.write('"""')
-
-            script.write(f"model.addStepFunctionCallback({block.name}.__disown__())")
-        
-        for block in exitBlocks:
-            script.write(f'{block.name} = r"""')
-            script.write(f"FLAMEGPU_HOST_FUNCTION({block.name}) {{", indent=1)
-            script.write(block.code, indent=-1)
-            script.write('}')
-            script.write('"""')
-
-            script.write(f"model.addExitFunctionCallback({block.name}.__disown__())")
 
         #POPULATION TRACKER
 

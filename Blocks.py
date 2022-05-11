@@ -139,12 +139,12 @@ class ResizeBlock(Block):
 
 class FuncBlock(ResizeBlock):
 
-    def __init__(self, parent, name, index, messages, inp_type = "", out_type = "", code = ""):
+    def __init__(self, parent, name, index, messages, inp_type = "", out_type = "", code = None):
         super().__init__(parent, name, index)
         self.inp_type = inp_type
         self.out_type = out_type
         self.msg_list = messages
-        self.code = code
+        self.code = code if code != None else []
 
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -228,7 +228,7 @@ class FuncBlock(ResizeBlock):
             lbl.setText(newText)
 
     def changeCode(self):
-        self.code = self.codeTxtEdit.toPlainText()
+        self.code = self.codeTxtEdit.toPlainText().split("\n")
 
     def inpChange(self):
         self.inp_type = self.inpCombo.currentText()
@@ -359,9 +359,9 @@ class AgentBlock(Block):
 
 
 class HostFuncBlock(ResizeBlock):
-    def __init__(self, parent, name, index, funcType = "", code = ""):
+    def __init__(self, parent, name, index, funcType = "", code = None):
         super().__init__(parent, name, index)
-        self.code = code
+        self.code = code if code != None else []
         self.funcType = funcType
 
 
@@ -423,7 +423,7 @@ class HostFuncBlock(ResizeBlock):
             flowLbl.setText(self.name)
 
     def changeCode(self):
-        self.code = self.codeTxtEdit.toPlainText()
+        self.code = self.codeTxtEdit.toPlainText().split("\n")
 
     def changeType(self):
         self.funcType = self.typeCombo.currentText()

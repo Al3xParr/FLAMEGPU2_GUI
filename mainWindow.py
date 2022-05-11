@@ -616,44 +616,6 @@ class Ui_MainWindow(object):
                 child.setParent(None)
         
         self.layers -= 1
-        
-    
-
-
-    """
-    def removeItem(self, widget):
-        
-        if not isinstance(widget, QtCore.QObject):
-            widget = self.sender()
-
-        #layout = widget.parent().layout()
-        #items = layout.children()
-
-        #w_num = "".join([n for n in widget.objectName() if n.isdigit()])
-        widgName = widget.objectName()
-        name = list(filter(None, re.split("\d", widgName)))[0]
-        nums = list(filter(None, re.split("[a-zA-Z]", widgName)))[0]
-        baseName = name+nums
-
-        #for item in items:
-        #    i_num = "".join([n for n in item.objectName() if n.isdigit()])  
-        #    if i_num == w_num:                  
-        #        layout.removeItem(item)
-        #        break
-        print(widgName)
-        for child in widget.parent().children():
-            c_num = "".join([n for n in child.objectName() if n.isdigit()])
-            print(f"child Number: {c_num}")
-            if c_num == w_num and (child.objectName()[:5] == "layer" or child.objectName()[:3] == "env" or child.objectName()[:8] == "function"):
-                child.setParent(None)
-        
-        if widget.objectName()[:5] == "layer":
-            self.layers -= 1
-        elif widget.objectName()[:3] == "env":
-            self.envProps -= 1
-        #elif widget.objectName()[:8] == "function" and  widget.objectName()[9] != "S":
-            #self.fuctions -= 1
-    """
 
 
     def moveFlowFunc(self, obj, pos):
@@ -886,10 +848,6 @@ class Ui_MainWindow(object):
                 return
 
 
-        #REDO THIS ALL
-        #SEPARATE LSITS OF LAYERS, FUNCS AND ENV VARIABLES
-        #SEPARATE FUNCTIONS TO DELETE THEM
-
         layersToRemove = self.flowScrollContents.findChildren(QtWidgets.QPushButton, QtCore.QRegularExpression("layer.*"))
         for layer in layersToRemove:
             self.removeLayer(layer)
@@ -909,7 +867,6 @@ class Ui_MainWindow(object):
 
         #Resets all variables storing data about state of program
         self.layers = 0
-        #self.functions = 0
         self.envProps = 0
         self.agentBlockNum = 0
         self.funcBlockNum = 0
@@ -917,7 +874,6 @@ class Ui_MainWindow(object):
         self.lines = {}
         self.agentPositions = {}
         self.funcPositions = {}
-        #self.linkedFuncList = {}
         self.genFuncBlockNum = 0
 
         self.config = configData
@@ -958,22 +914,6 @@ class Ui_MainWindow(object):
                             displayedFuncs.append(fBlock["name"])
                             pos = QtCore.QPoint(fBlock["pos"][0], fBlock["pos"][1])
                             self.createFunctionBlock(fBlock["name"], fBlock["inp_type"], fBlock["out_type"], pos, fBlock["index"], code = fBlock["code"])
-                
-        """
-        agentList = self.findChildren(AgentBlock)
-        funcList = self.findChildren(FuncBlock)
-
-        for key, val in self.lines.items():
-            key = int(key)
-            
-            agentName = [a.name for a in agentList if a.index == key][0]
-            self.linkedFuncList[agentName] = []
-            for index in val:
-                index = int(index)
-                funcName = [f.name for f in funcList if f.index == index][0]
-                self.linkedFuncList[agentName].append(funcName)
-        """
-
 
 
     def errorMsg(self, string):

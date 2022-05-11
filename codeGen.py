@@ -1,6 +1,6 @@
 class CodeGen:
 
-    def __init__(self, tab="\t"):
+    def __init__(self, tab="    "):
         self.code = []
         self.tab = tab
         self.level = 0

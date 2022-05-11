@@ -30,60 +30,80 @@ VISUALISATION = True
 
 output_message = r"""
 FLAMEGPU_AGENT_FUNCTION(output_message, flamegpu::MessageNone, flamegpu::MessageSpatial3D) {
-	    FLAMEGPU->message_out.setVariable<flamegpu::id_t>("id", FLAMEGPU->getID());
-    FLAMEGPU->message_out.setLocation(
-        FLAMEGPU->getVariable<float>("x"),
-        FLAMEGPU->getVariable<float>("y"),
-        FLAMEGPU->getVariable<float>("z"));
-    return flamegpu::ALIVE;
+        FLAMEGPU->message_out.setVariable<flamegpu::id_t>("id", FLAMEGPU->getID());
+        FLAMEGPU->message_out.setLocation(
+            FLAMEGPU->getVariable<float>("x"),
+            FLAMEGPU->getVariable<float>("y"),
+            FLAMEGPU->getVariable<float>("z"));
+        return flamegpu::ALIVE;
 }
 """
 
 move = r"""
 FLAMEGPU_AGENT_FUNCTION(move, flamegpu::MessageSpatial3D, flamegpu::MessageNone) {
-	    const flamegpu::id_t ID = FLAMEGPU->getID();
-    const float REPULSE_FACTOR = FLAMEGPU->environment.getProperty<float>("repulse");
-    const float RADIUS = FLAMEGPU->message_in.radius();
-    float fx = 0.0;
-    float fy = 0.0;
-    float fz = 0.0;
-    const float x1 = FLAMEGPU->getVariable<float>("x");
-    const float y1 = FLAMEGPU->getVariable<float>("y");
-    const float z1 = FLAMEGPU->getVariable<float>("z");
-    int count = 0;
-    for (const auto &message : FLAMEGPU->message_in(x1, y1, z1)) {
-        if (message.getVariable<flamegpu::id_t>("id") != ID) {
-            const float x2 = message.getVariable<float>("x");
-            const float y2 = message.getVariable<float>("y");
-            const float z2 = message.getVariable<float>("z");
-            float x21 = x2 - x1;
-            float y21 = y2 - y1;
-            float z21 = z2 - z1;
-            const float separation = sqrtf(x21*x21 + y21*y21 + z21*z21);
-            if (separation < RADIUS && separation > 0.0f) {
-                float k = sinf((separation / RADIUS)*3.141f*-2)*REPULSE_FACTOR;
-                // Normalise without recalculating separation
-                x21 /= separation;
-                y21 /= separation;
-                z21 /= separation;
-                fx += k * x21;
-                fy += k * y21;
-                fz += k * z21;
-                count++;
+        const flamegpu::id_t ID = FLAMEGPU->getID();
+        const float REPULSE_FACTOR = FLAMEGPU->environment.getProperty<float>("repulse");
+        const float RADIUS = FLAMEGPU->message_in.radius();
+        float fx = 0.0;
+        float fy = 0.0;
+        float fz = 0.0;
+        const float x1 = FLAMEGPU->getVariable<float>("x");
+        const float y1 = FLAMEGPU->getVariable<float>("y");
+        const float z1 = FLAMEGPU->getVariable<float>("z");
+        int count = 0;
+        for (const auto &message : FLAMEGPU->message_in(x1, y1, z1)) {
+            if (message.getVariable<flamegpu::id_t>("id") != ID) {
+                const float x2 = message.getVariable<float>("x");
+                const float y2 = message.getVariable<float>("y");
+                const float z2 = message.getVariable<float>("z");
+                float x21 = x2 - x1;
+                float y21 = y2 - y1;
+                float z21 = z2 - z1;
+                const float separation = sqrtf(x21*x21 + y21*y21 + z21*z21);
+                if (separation < RADIUS && separation > 0.0f) {
+                    float k = sinf((separation / RADIUS)*3.141f*-2)*REPULSE_FACTOR;
+                    // Normalise without recalculating separation
+                    x21 /= separation;
+                    y21 /= separation;
+                    z21 /= separation;
+                    fx += k * x21;
+                    fy += k * y21;
+                    fz += k * z21;
+                    count++;
+                }
             }
         }
-    }
-    fx /= count > 0 ? count : 1;
-    fy /= count > 0 ? count : 1;
-    fz /= count > 0 ? count : 1;
-    FLAMEGPU->setVariable<float>("x", x1 + fx);
-    FLAMEGPU->setVariable<float>("y", y1 + fy);
-    FLAMEGPU->setVariable<float>("z", z1 + fz);
-    FLAMEGPU->setVariable<float>("drift", sqrtf(fx*fx + fy*fy + fz*fz));
-    return flamegpu::ALIVE;
+        fx /= count > 0 ? count : 1;
+        fy /= count > 0 ? count : 1;
+        fz /= count > 0 ? count : 1;
+        FLAMEGPU->setVariable<float>("x", x1 + fx);
+        FLAMEGPU->setVariable<float>("y", y1 + fy);
+        FLAMEGPU->setVariable<float>("z", z1 + fz);
+        FLAMEGPU->setVariable<float>("drift", sqrtf(fx*fx + fy*fy + fz*fz));
+        return flamegpu::ALIVE;
 }
 """
 
+class Validation(pyflamegpu.HostFunctionCallback):
+    def __init__(self):
+        self.prevTotalDrift = sys.float_info.max
+        self.driftDropped = 0
+        self.driftIncreased = 0
+        super().__init__()
+        
+    
+    def run(self, FLAMEGPU):         
+    
+        totalDrift = FLAMEGPU.agent("Circle").sumFloat("drift")
+        if totalDrift <= self.prevTotalDrift:
+            self.driftDropped += 1
+        else:
+            self.driftIncreased += 1
+        self.prevTotalDrift = totalDrift
+        print(f"Drift correct: {100* self.driftDropped/(self.driftDropped+self.driftIncreased)}")
+
+
+model.addStepFunctionCallback(Validation().__disown__())
 agent1.newRTCFunction("output_message", output_message).setMessageOutput("location")
 agent1.newRTCFunction("move", move).setMessageInput("location")
 
@@ -98,34 +118,34 @@ layer.addAgentFunction("Circle", "move")
 cudaSimulation = pyflamegpu.CUDASimulation(model)
 
 if pyflamegpu.VISUALISATION:
-	visualisation = cudaSimulation.getVisualisation()
-	visualisation.setSimulationSpeed(30)
-	visualisation.setInitialCameraLocation(30, 30, 30)
-	agent0Sim = visualisation.addAgent("Circle")
-	agent0Sim.setModel(pyflamegpu.ICOSPHERE)
-	agent0Sim.setModelScale(0.05)
-	agent0Sim.setColor(pyflamegpu.Color("#fcba03"));
-	visualisation.activate()
+    visualisation = cudaSimulation.getVisualisation()
+    visualisation.setSimulationSpeed(30)
+    visualisation.setInitialCameraLocation(30, 30, 30)
+    agent0Sim = visualisation.addAgent("Circle")
+    agent0Sim.setModel(pyflamegpu.ICOSPHERE)
+    agent0Sim.setModelScale(0.05)
+    agent0Sim.setColor(pyflamegpu.Color("#fcba03"));
+    visualisation.activate()
 
 if seed is not None:
-	cudaSimulation.SimulationConfig().random_seed = 0
-	cudaSimulation.applyConfig()
+    cudaSimulation.SimulationConfig().random_seed = 0
+    cudaSimulation.applyConfig()
 
 if not cudaSimulation.SimulationConfig().input_file:
-	random.seed(cudaSimulation.SimulationConfig().random_seed)
-	CirclePop = pyflamegpu.AgentVector(model.Agent("Circle"), env.getPropertyUInt16("AGENT_COUNT"))
-	
-	for i in range(env.getPropertyUInt16("AGENT_COUNT")):
-		agent = CirclePop[i]
-		agent.setVariableFloat("x", random.random()*25)
-		agent.setVariableFloat("y", random.random()*25)
-		agent.setVariableFloat("z", random.random()*25)
-		agent.setVariableFloat("drift", 0)
-		
-	cudaSimulation.setPopulationData(CirclePop)
-	
+    random.seed(cudaSimulation.SimulationConfig().random_seed)
+    CirclePop = pyflamegpu.AgentVector(model.Agent("Circle"), env.getPropertyUInt16("AGENT_COUNT"))
+    
+    for i in range(env.getPropertyUInt16("AGENT_COUNT")):
+        agent = CirclePop[i]
+        agent.setVariableFloat("x", random.random()*25)
+        agent.setVariableFloat("y", random.random()*25)
+        agent.setVariableFloat("z", random.random()*25)
+        agent.setVariableFloat("drift", 0)
+        
+    cudaSimulation.setPopulationData(CirclePop)
+    
 cudaSimulation.SimulationConfig().steps = 1000
 cudaSimulation.simulate()
 
 if pyflamegpu.VISUALISATION:
-	visualisation.join()
+    visualisation.join()
