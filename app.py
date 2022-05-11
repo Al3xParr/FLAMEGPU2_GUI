@@ -1,17 +1,13 @@
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtWidgets import QMainWindow, QApplication
 from PyQt6.QtCore import Qt, QPoint
-#from sqlalchemy import values
 
 import subprocess
-from structures import Message
 import sys
 import codeGen
 
 from mainWindow import Ui_MainWindow
 from Blocks import AgentBlock, FuncBlock, HostFuncBlock
-
-
 
 
 class BaseWindow(QMainWindow, Ui_MainWindow):
@@ -155,9 +151,6 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
     def buildScript(self):
         self.saveFile()
 
-        #Messages Values
-        #Agent values-
-
         genBlocks = self.findChildren(HostFuncBlock)
         initBlocks = []
         stepBlocks = []
@@ -280,8 +273,6 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
 
             script.write(f"model.addInitFunctionCallback({block.name}.__disown__())")
 
-
-
         for agentNum, funcNums in self.lines.items():
             for funcNum in funcNums:
                 func = [b for b in fBlocks if b.index == funcNum][0]
@@ -323,7 +314,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
             script.write("")
         
 
-        for block in exitBlocks:
+        for block in stepBlocks:
             script.write(f'{block.name} = r"""')
             script.write(f"FLAMEGPU_HOST_FUNCTION({block.name}) {{", indent=1)
             script.write(block.code, indent=-1)
