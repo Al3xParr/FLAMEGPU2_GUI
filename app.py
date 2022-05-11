@@ -22,7 +22,6 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
 
         self.saveLoc = ""
 
-
     def dragEnterEvent(self, e):
         e.accept()
 
@@ -30,14 +29,13 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         pos = e.position()
         source = e.source()
         if source.parent().objectName() == "flowScrollContents":
-            print(source.objectName())
             if source.objectName()[:4] == "step":
                 self.moveFlowFunc(source, pos)
             else:
                 for x in range(self.flowVertLayout.count()-1):
                     item = self.flowVertLayout.itemAt(x)
                     if isinstance(item, QtWidgets.QWidgetItem): continue
-                    print("item type: ", type(item))
+
                     if item.objectName().split("(")[0][:-3] == source.objectName().split("(")[0]:
                         layout = item
                         self.moveFlowFunc(layout, pos)
@@ -50,7 +48,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         pos = e.position()
         parent = widget.parent()
 
-
+        #Calls move function on the relavent block
         if widget.objectName()[:5] == "Agent":
             newPos = widget.dragged(pos.toPoint())
             circleName = widget.objectName()[:-5] + "Circle"
@@ -66,15 +64,15 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         elif widget.objectName()[:7] == "GenFunc": 
             newPos = widget.dragged(pos.toPoint())
 
-
+        #Updates the lines
         self.update()
-
         e.accept()
 
     def mousePressEvent(self, e):
         pos = e.position()
         if e.buttons() == Qt.MouseButton.LeftButton:
             self.agentIndex = self.inAgentArea(pos)
+            #Sets line draggin start
             if self.agentIndex is not None:
                 self.drawLine = True
                 self.lineStart = self.agentPositions[self.agentIndex] + QtCore.QPoint(150, 40)
@@ -91,6 +89,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         self.funcIndex = self.inFuncArea(e.position())
         if self.drawLine and self.funcIndex is not None:
             if self.agentIndex in self.lines:
+                #If the line doesnt already exits it gets addded to list
                 if self.funcIndex not in self.lines[self.agentIndex]:
                     self.lines[self.agentIndex].append(self.funcIndex)
             else:
@@ -108,7 +107,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
                     break
             if alreadyPresent:
                 funcs = self.flowScrollContents.findChildren(QtWidgets.QLabel,  QtCore.QRegularExpression("function.*"))
-                print(funcs)
+ 
                 for f in funcs:
                     if f.text() == funcName:
                         for k, v in self.linkedFuncList.items():
@@ -124,7 +123,6 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
             else:
                 self.linkedFuncList[agentName] = [funcName]
         
-        print(self.linkedFuncList)
 
         self.lineStart = QtCore.QPoint()
         self.lineEnd = QtCore.QPoint()
@@ -139,6 +137,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         self.config["seed"] = seed
         self.visData["system"] = visData
 
+    #Gets the exact value of a variabel refering to an environemnt prop
     def convertToLiteral(self, string, variables):
         for v in variables.values():
             if v["name"] == string:
@@ -147,7 +146,7 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         return string
         
         
-
+    #Writes the flamegpu2 script and saves it to fileloc
     def buildScript(self):
         self.saveFile()
 
@@ -368,14 +367,10 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
         script.write("if pyflamegpu.VISUALISATION:", indent=1)
         script.write("visualisation.join()")
 
-        
-
         script.save(self.saveLoc[:-5]+".py")
-
         
         fullFileLoc = self.saveLoc[:-5]+".py"
-
-        
+        #Runs the newly written script        
         subprocess.Popen(["python", fullFileLoc])
 
     def resetAll(self):
@@ -386,8 +381,6 @@ class BaseWindow(QMainWindow, Ui_MainWindow):
 
         self.agentIndex = None
         self.funcIndex = None
-
-
 
 
 def runApp():
