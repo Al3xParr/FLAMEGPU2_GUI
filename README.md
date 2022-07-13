@@ -11,9 +11,9 @@ This application provides a GUI for FLAMEGPU2, allowing users to define broad as
  This program is written entirely in Python and makes use of both PyQt6 for the GUI builing and pyflamegpu for the simulation execution.
 
 To run this application:<br>
--Download folder<br>
--Open the terminal and navigate to where the folder is located<br>
--Run "python app.py"<br>
+  -Download folder<br>
+  -Open the terminal and navigate to where the folder is located<br>
+  -Run "python app.py"<br>
 
 
 The JSON file "CirclesDemoBackup" in the Saves folder contains a pre-defined model within the application.
