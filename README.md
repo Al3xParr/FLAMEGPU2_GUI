@@ -6,7 +6,8 @@ This application provides a GUI for FLAMEGPU2, allowing users to define broad as
   - Execution order of simulation<br>
   - Host functions (Functions that are not related explicitly to a specific agent type)<br>
   - Simulation configuration<br>
- all without writing any code. The only code required is the code to define agent behaviour.
+ 
+ All without writing any code. The only code required is the code to define agent behaviour.
  
  This program is written entirely in Python and makes use of both PyQt6 for the GUI builing and pyflamegpu for the simulation execution.
 
